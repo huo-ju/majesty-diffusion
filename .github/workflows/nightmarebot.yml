@@ -15,7 +15,7 @@ name: Build and Push Image to GAR
 on:
   push:
     branches:
-      - main
+      - nightmarebot
 
 env:
   PROJECT_ID: nightmarebot-ai
