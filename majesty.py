@@ -684,7 +684,7 @@ def null_fn(x_in):
 
 
 def display_handler(x, i, cadance=5, decode=True):
-    global img_tensor, image_grid, p, progress
+    global progress, image_grid, writer, img_tensor, im, p
     img_tensor = x
     if i % cadance == 0:
         if decode:
@@ -1279,7 +1279,7 @@ def do_run():
                                         "-i",
                                         temp_file,
                                         "-o",
-                                        "/tmp/results",
+                                        "results",
                                         "-v",
                                         str(GFP_ver),
                                         "-s",
@@ -1291,7 +1291,7 @@ def do_run():
 
                                 face_corrected = Image.open(
                                     fetch(
-                                        f"/tmp/results/restored_imgs/{temp_file_name}"
+                                        f"GFPGAN/results/restored_imgs/{temp_file_name}"
                                     )
                                 )
                                 with io.BytesIO() as output:
@@ -1300,7 +1300,7 @@ def do_run():
                                         progress.value = output.getvalue()
                                 init = Image.open(
                                     fetch(
-                                        f"/tmp/results/restored_imgs/{temp_file_name}"
+                                        f"GFPGAN/results/restored_imgs/{temp_file_name}"
                                     )
                                 ).convert("RGB")
                                 init = TF.to_tensor(init).to(device).unsqueeze(0)
@@ -1337,7 +1337,7 @@ def do_run():
                     current_time = str(round(time.time()))
                     if last_step_upscale:
                         latest_upscale = Image.open(
-                            fetch(f"/tmp/results/restored_imgs/{temp_file_name}")
+                            fetch(f"GFPGAN/results/restored_imgs/{temp_file_name}")
                         ).convert("RGB")
                         latest_upscale.save(
                             os.path.join(outpath, f"{current_time}.png"), format="PNG"
