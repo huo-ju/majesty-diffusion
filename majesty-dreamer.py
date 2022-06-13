@@ -88,7 +88,7 @@ def upload_local_directory_to_minio(local_path, bucket_name, minio_path):
             )
 
 
-def process(id):
+def process(id: str):
     workdir = os.path.join("/tmp", id)
     majesty.outputs_path = workdir
     majesty.custom_settings = f"{workdir}/settings.cfg"
