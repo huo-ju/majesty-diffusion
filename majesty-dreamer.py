@@ -12,6 +12,7 @@ import glob
 import os
 
 token = os.environ["NIGHTMAREBOT_WORKER_TOKEN"]
+queue_name = os.environ["NIGHTMAREBOT_QUEUE_NAME"]
 session_id = "test"
 reply_session_id = "test-reply"
 minio_key = os.environ["NIGHTMAREBOT_MINIO_KEY"]
