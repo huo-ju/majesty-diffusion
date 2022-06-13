@@ -1,4 +1,4 @@
-from azure.servicebus import ServiceBusClient
+from azure.servicebus import ServiceBusClient, ServiceBusMessage
 from azure.servicebus import AutoLockRenewer
 from minio import Minio
 
@@ -13,6 +13,7 @@ import os
 connstr = os.environ["NIGHTMAREBOT_SERVICEBUS_CONNECTION_STRING"]
 queue_name = os.environ["NIGHTMAREBOT_SERVICEBUS_QUEUE_NAME"]
 session_id = "test"
+reply_session_id = "test-reply"
 minio_key = os.environ["NIGHTMAREBOT_MINIO_KEY"]
 minio_secret = os.environ["NIGHTMAREBOT_MINIO_SECRET"]
 
@@ -111,5 +112,9 @@ with ServiceBusClient.from_connection_string(connstr) as client:
         session = receiver.session
         lock_renewal.register(receiver, session, max_lock_renewal_duration=300)
         for message in receiver:
-            process(id)
+            process(str(id))
+            with client.get_queue_sender(queue_name) as sender:
+                sender.send_messages(
+                    ServiceBusMessage(str(id), session_id=reply_session_id)
+                )
             receiver.complete_message(message)
