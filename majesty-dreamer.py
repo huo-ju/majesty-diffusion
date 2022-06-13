@@ -53,7 +53,7 @@ torch.cuda.empty_cache()
 gc.collect()
 majesty.opt.outdir = majesty.outputs_path
 
-client = Minio(
+minio_client = Minio(
     "dumb.dev",
     access_key=minio_key,
     secret_key=minio_secret,
@@ -83,7 +83,7 @@ def upload_local_directory_to_minio(local_path, bucket_name, minio_path):
             remote_path = remote_path.replace(
                 os.sep, "/"
             )  # Replace \ with / on Windows
-            client.fput_object(
+            minio_client.fput_object(
                 bucket_name, remote_path, local_file, content_type=content_type
             )
 
@@ -93,7 +93,7 @@ def process(id):
     majesty.outputs_path = workdir
     majesty.custom_settings = f"{workdir}/settings.cfg"
     os.makedirs(workdir)
-    client.fget_object(
+    minio_client.fget_object(
         "nightmarebot-workflow", f"{id}/settings.cfg", majesty.custom_settings
     )
     majesty.load_custom_settings()
