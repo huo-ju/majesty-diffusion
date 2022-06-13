@@ -23,6 +23,7 @@ RUN pip install basicsr
 RUN pip install facexlib
 RUN pip install realesrgan
 RUN pip install ipywidgets
+RUN pip install azure-servicebus minio
 
 RUN git clone https://github.com/apolinario/Multi-Modal-Comparators --branch gradient_checkpointing
 RUN pip install poetry
@@ -36,5 +37,6 @@ VOLUME [ "/root/.cache" ]
 
 COPY majesty.py .
 COPY latent.py .
+COPY majesty-dreamer.py .
 COPY latent_settings_library .
-ENTRYPOINT ["python", "latent.py"]
+ENTRYPOINT ["python", "majesty-dreamer.py"]
