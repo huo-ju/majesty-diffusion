@@ -1,6 +1,7 @@
 from azure.servicebus import ServiceBusClient, ServiceBusMessage
 from azure.servicebus import AutoLockRenewer
 from minio import Minio
+from urllib.request import urlopen
 
 import torch
 import majesty as majesty
@@ -10,8 +11,7 @@ import gc
 import glob
 import os
 
-connstr = os.environ["NIGHTMAREBOT_SERVICEBUS_CONNECTION_STRING"]
-queue_name = os.environ["NIGHTMAREBOT_SERVICEBUS_QUEUE_NAME"]
+token = os.environ["NIGHTMAREBOT_WORKER_TOKEN"]
 session_id = "test"
 reply_session_id = "test-reply"
 minio_key = os.environ["NIGHTMAREBOT_MINIO_KEY"]
@@ -19,6 +19,8 @@ minio_secret = os.environ["NIGHTMAREBOT_MINIO_SECRET"]
 
 lock_renewal = AutoLockRenewer(max_workers=4)
 
+# Get connection string from token - TODO flesh this out
+connstr = urlopen(f"https://dreamer.nightmarebot.com/{token}").read().decode("utf-8")
 
 # Init
 majesty.download_models()
