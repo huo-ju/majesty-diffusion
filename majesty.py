@@ -26,7 +26,7 @@ from math import pi
 from resize_right import resize
 
 import subprocess
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, CalledProcessError
 
 from dataclasses import dataclass
 from functools import partial
@@ -1265,6 +1265,7 @@ def do_run():
                                     "temp_" + f"{str(round(time.time()))}.png"
                                 )
                                 temp_file = os.path.join(sample_path, temp_file_name)
+                                out_dir = os.path.join(sample_path, "results")
                                 im.save(temp_file, format="PNG")
                                 GFP_factor = 2 if scale_factor > 1 else 1
                                 GFP_ver = 1.3  # if GFP_factor == 1 else 1.2
@@ -1272,9 +1273,9 @@ def do_run():
                                 torch.cuda.empty_cache()
                                 gc.collect()
 
-                                subprocess.call(
+                                with Popen(
                                     [
-                                        "python3",
+                                        "python",
                                         "inference_gfpgan.py",
                                         "-i",
                                         temp_file,
@@ -1286,8 +1287,14 @@ def do_run():
                                         str(GFP_factor),
                                     ],
                                     cwd="GFPGAN",
-                                    shell=False,
-                                )
+                                    shell=True,
+                                    stdout=PIPE,
+                                ) as p:
+                                    for line in p.stdout:
+                                        print(line, end="")
+
+                                if p.returncode != 0:
+                                    raise CalledProcessError(p.returncode, p.args)
 
                                 face_corrected = Image.open(
                                     fetch(

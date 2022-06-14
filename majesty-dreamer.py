@@ -1,10 +1,15 @@
-from azure.servicebus import ServiceBusClient, ServiceBusMessage
+from azure.servicebus import ServiceBusClient, NEXT_AVAILABLE_SESSION
 from azure.servicebus import AutoLockRenewer
+from click import prompt
 from minio import Minio
 from urllib.request import Request, urlopen
+import majesty as majesty
+from subprocess import CalledProcessError, Popen, PIPE
+import requests
+import json
 
 import torch
-import majesty as majesty
+
 from omegaconf import OmegaConf
 
 import gc
@@ -13,8 +18,6 @@ import os
 
 token = os.environ["NIGHTMAREBOT_WORKER_TOKEN"]
 queue_name = os.environ["NIGHTMAREBOT_QUEUE_NAME"]
-session_id = "test"
-reply_session_id = "test-reply"
 minio_key = os.environ["NIGHTMAREBOT_MINIO_KEY"]
 minio_secret = os.environ["NIGHTMAREBOT_MINIO_SECRET"]
 
@@ -32,26 +35,6 @@ connstr = (
     .decode("utf-8")
 )
 
-# Init
-majesty.download_models()
-torch.backends.cudnn.benchmark = True
-majesty.device = torch.device("cuda")
-config = OmegaConf.load(
-    "./latent-diffusion/configs/latent-diffusion/txt2img-1p4B-eval.yaml"
-)
-latent_diffusion_model = "finetuned"
-model = majesty.load_model_from_config(
-    config,
-    f"{majesty.model_path}/latent_diffusion_txt2img_f8_large.ckpt",
-    False,
-    "latent_diffusion_model",
-)
-majesty.model = model.half().eval().to(majesty.device)
-majesty.load_lpips_model()
-majesty.load_aesthetic_model()
-torch.cuda.empty_cache()
-gc.collect()
-majesty.opt.outdir = majesty.outputs_path
 
 minio_client = Minio(
     "dumb.dev",
@@ -89,44 +72,80 @@ def upload_local_directory_to_minio(local_path, bucket_name, minio_path):
 
 
 def process(id: str):
+    print(f"processing {id}")
     workdir = os.path.join("/tmp", id)
-    majesty.outputs_path = workdir
-    majesty.custom_settings = f"{workdir}/settings.cfg"
-    os.makedirs(workdir)
+    outdir = os.path.join(workdir, "results")
+    custom_settings = f"{workdir}/settings.cfg"
+    try:
+        os.makedirs(outdir)
+    except:
+        if len(glob.glob(outdir + "/*.png")) > 0:
+            print("output exists, skipping")
+            return
     minio_client.fget_object(
-        "nightmarebot-workflow", f"{id}/settings.cfg", majesty.custom_settings
+        "nightmarebot-workflow", f"{id}/settings.cfg", custom_settings
     )
-    majesty.load_custom_settings()
-    majesty.full_clip_load()
-    majesty.config_init_image()
 
-    majesty.prompts = majesty.clip_prompts
-    if majesty.latent_prompts == [] or majesty.latent_prompts == None:
-        majesty.opt.prompt = majesty.prompts
-    else:
-        majesty.opt.prompt = majesty.latent_prompts
-    majesty.opt.uc = majesty.latent_negatives
-    majesty.set_custom_schedules()
+    with Popen(
+        [
+            "python",
+            "latent.py",
+            "-m",
+            "/root/.cache/majesty",
+            "-o",
+            outdir,
+            "-c",
+            custom_settings,
+            "--model_source",
+            "https://storage.googleapis.com/majesty-diffusion-models",
+        ],
+        stdout=PIPE,
+        bufsize=1,
+        universal_newlines=True,
+    ) as p:
+        for line in p.stdout:
+            print(line, end="")
 
-    majesty.config_clip_guidance()
-    majesty.config_output_size()
-    majesty.config_options()
+    if p.returncode != 0:
+        raise CalledProcessError(p.returncode, p.args)
 
-    torch.cuda.empty_cache()
-    gc.collect()
-    majesty.do_run()
-    upload_local_directory_to_minio(workdir, "nightmarebot-output", id)
+    images = glob.glob(outdir + "/*.png")
+    minio_client.fput_object("nightmarebot-output", f"{id}/{id}.png", images[0])
 
+    response = requests.post(
+        f"https://nightmarebot.azurewebsites.net/api/ProcessResult?token={token}&id={id}"
+    )
+    print(response.headers)
+    # upload_local_directory_to_minio(workdir, "nightmarebot-output", id)
+
+
+majesty.model_path = "/root/.cache/majesty"
+majesty.download_models()
 
 # Main loop
-with ServiceBusClient.from_connection_string(connstr) as client:
-    with client.get_queue_receiver(queue_name, session_id=session_id) as receiver:
-        session = receiver.session
-        lock_renewal.register(receiver, session, max_lock_renewal_duration=300)
-        for message in receiver:
-            process(str(id))
-            with client.get_queue_sender(queue_name) as sender:
-                sender.send_messages(
-                    ServiceBusMessage(str(id), session_id=reply_session_id)
-                )
-            receiver.complete_message(message)
+while True:
+    with ServiceBusClient.from_connection_string(connstr) as client:
+        session_id = os.getenv("NIGHTMAREBOT_SESSION_ID")
+        if session_id == "" or session_id == None:
+            session_id = NEXT_AVAILABLE_SESSION
+        with client.get_queue_receiver(
+            queue_name, session_id=session_id, max_wait_time=15
+        ) as receiver:
+            session = receiver.session
+            for message in receiver:
+                lock_renewal.register(receiver, session)
+                request_id: str = str(message)
+                try:
+                    process(request_id)
+                except Exception as e:
+                    print(f"Error processing request:{e}", flush=True)
+                try:
+                    receiver.complete_message(message)
+                except Exception as e:
+                    print(f"Error completing message:{e}", flush=True)
+                    try:
+                        client.get_queue_receiver(
+                            queue_name, session_id=session_id
+                        ).complete_message(message)
+                    except Exception as e:
+                        print(f"Completion retry failed: {e}")
