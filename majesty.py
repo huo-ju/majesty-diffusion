@@ -864,8 +864,7 @@ def generate_settings_file(add_prompts=False, add_dimensions=False):
     range_index = {list_mul_to_array(range_index)}
     active_function = "{active_function}"
     ths_method= "{ths_method}"
-    tv_scales = {list_mul_to_array(tv_scales)}
-    latent_tv_loss = {latent_tv_loss}
+    tv_scales = {list_mul_to_array(tv_scales)}    
 
     #If you uncomment this line you can schedule the CLIP guidance across the steps. Otherwise the clip_guidance_scale will be used
     clip_guidance_schedule = {list_mul_to_array(clip_guidance_index)}
@@ -1367,26 +1366,16 @@ def do_run():
 
                                 torch.cuda.empty_cache()
                                 gc.collect()
+                                cmd = f"python inference_gfpgan.py -i ../{temp_file} -o results -v {GFP_ver} -s {GFP_factor}"
+                                print(cmd + "\n")
                                 try:
-                                    res = subprocess.check_output(
-                                        [
-                                            "python",
-                                            "inference_gfpgan.py",
-                                            "-i",
-                                            temp_file,
-                                            "-o",
-                                            "results",
-                                            "-v",
-                                            str(GFP_ver),
-                                            "-s",
-                                            str(GFP_factor),
-                                        ],
+                                    subprocess.call(
+                                        cmd,
                                         cwd="./GFPGAN",
                                         shell=True,
                                     )
-                                    print(res)
                                 except subprocess.CalledProcessError as e:
-                                    print(f"GFPGAN execute failed {e.output}")
+                                    print(f"GFPGAN execute failed {e.output}\n")
 
                                 face_corrected = Image.open(
                                     fetch(
