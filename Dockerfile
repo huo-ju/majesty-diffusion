@@ -1,6 +1,7 @@
 FROM pytorch/pytorch:1.11.0-cuda11.3-cudnn8-runtime
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install tzdata build-essential wget git git-lfs \
+    ffmpeg libsm6 libxext6 \
     && apt-get clean
 
 RUN mkdir -p /src
@@ -35,6 +36,6 @@ RUN python Multi-Modal-Comparators/src/mmc/napm_installs/__init__.py
 VOLUME [ "/src/models" ]
 VOLUME [ "/root/.cache" ]
 
-COPY majesty.py .
-COPY latent.py .
+COPY *.py .
+COPY *.ipynb .
 ENTRYPOINT ["python", "latent.py"]
