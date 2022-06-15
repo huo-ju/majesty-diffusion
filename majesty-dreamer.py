@@ -1,3 +1,4 @@
+from time import sleep
 from azure.servicebus import ServiceBusClient, NEXT_AVAILABLE_SESSION
 from azure.servicebus import AutoLockRenewer
 from click import prompt
@@ -7,6 +8,7 @@ import majesty as majesty
 from subprocess import CalledProcessError, Popen, PIPE
 import requests
 import json
+import datetime
 
 import torch
 
@@ -122,30 +124,44 @@ def process(id: str):
 majesty.model_path = "/root/.cache/majesty"
 majesty.download_models()
 
-# Main loop
-while True:
-    with ServiceBusClient.from_connection_string(connstr) as client:
-        session_id = os.getenv("NIGHTMAREBOT_SESSION_ID")
-        if session_id == "" or session_id == None:
-            session_id = NEXT_AVAILABLE_SESSION
-        with client.get_queue_receiver(
-            queue_name, session_id=session_id, max_wait_time=15
-        ) as receiver:
-            session = receiver.session
-            for message in receiver:
-                lock_renewal.register(receiver, session)
-                request_id: str = str(message)
-                try:
-                    process(request_id)
-                except Exception as e:
-                    print(f"Error processing request:{e}", flush=True)
-                try:
-                    receiver.complete_message(message)
-                except Exception as e:
-                    print(f"Error completing message:{e}", flush=True)
+# Run for 5 minutes without messages then request shutdown
+runUntil = datetime.datetime.now() + datetime.timedelta(minutes=1)
+while datetime.datetime.now() < runUntil:
+    try:
+        with ServiceBusClient.from_connection_string(connstr) as client:
+            session_id = os.getenv("NIGHTMAREBOT_SESSION_ID")
+            if session_id == "" or session_id == None:
+                session_id = NEXT_AVAILABLE_SESSION
+            with client.get_queue_receiver(
+                queue_name, session_id=session_id, max_wait_time=15
+            ) as receiver:
+                session = receiver.session
+                for message in receiver:
+                    lock_renewal.register(receiver, session)
+                    request_id: str = str(message)
                     try:
-                        client.get_queue_receiver(
-                            queue_name, session_id=session_id
-                        ).complete_message(message)
+                        process(request_id)
                     except Exception as e:
-                        print(f"Completion retry failed: {e}")
+                        print(f"Error processing request:{e}", flush=True)
+                    try:
+                        receiver.complete_message(message)
+                    except Exception as e:
+                        print(f"Error completing message:{e}", flush=True)
+                        try:
+                            client.get_queue_receiver(
+                                queue_name, session_id=session_id
+                            ).complete_message(message)
+                        except Exception as e:
+                            print(f"Completion retry failed: {e}")
+                    runUntil = datetime.datetime.now() + datetime.timedelta(minutes=1)
+    except Exception as e:
+        print(f"Listen failed: {e}")
+        sleep(5)
+
+while True:
+    worker_env = os.getenv("NIGHTMAREBOT_WORKER_ENV")
+    worker_id = os.getenv("NIGHTMAREBOT_WORKER_ID")
+    response = requests.post(
+        f"https://nightmarebot.azurewebsites.net/api/IdleWorker?token={token}&env={worker_env}&id={worker_id}"
+    )
+    sleep(60)

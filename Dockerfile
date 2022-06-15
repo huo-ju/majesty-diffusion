@@ -32,8 +32,8 @@ RUN poetry build; pip install dist/mmc*.whl
 WORKDIR /src
 RUN python Multi-Modal-Comparators/src/mmc/napm_installs/__init__.py
 
-VOLUME [ "/src/models" ]
-VOLUME [ "/root/.cache" ]
+COPY download-models.py .
+#RUN python download-models.py
 
 COPY majesty.py .
 COPY latent.py .
