@@ -33,9 +33,12 @@ RUN poetry build; pip install dist/mmc*.whl
 WORKDIR /src
 RUN python Multi-Modal-Comparators/src/mmc/napm_installs/__init__.py
 
+RUN git lfs clone https://huggingface.co/datasets/multimodalart/latent-majesty-diffusion-settings
+
 VOLUME [ "/src/models" ]
 VOLUME [ "/root/.cache" ]
 
 COPY *.py .
 COPY *.ipynb .
+
 ENTRYPOINT ["python", "latent.py"]
