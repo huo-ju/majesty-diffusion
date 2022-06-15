@@ -39,6 +39,7 @@ RUN git lfs clone https://huggingface.co/datasets/multimodalart/latent-majesty-d
 VOLUME [ "/src/models" ]
 VOLUME [ "/root/.cache" ]
 
-COPY *.py .
-COPY *.ipynb .
+COPY *.py ./
+COPY *.ipynb ./
+
 ENTRYPOINT ["python", "majesty-dreamer.py"]
