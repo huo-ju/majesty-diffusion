@@ -1,6 +1,7 @@
 FROM pytorch/pytorch:1.11.0-cuda11.3-cudnn8-runtime
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install tzdata build-essential wget git git-lfs \
+    ffmpeg libsm6 libxext6 \
     && apt-get clean
 
 RUN mkdir -p /src
@@ -23,6 +24,7 @@ RUN pip install basicsr
 RUN pip install facexlib
 RUN pip install realesrgan
 RUN pip install ipywidgets
+RUN pip install opencv-python
 RUN pip install azure-servicebus minio
 
 RUN git clone https://github.com/apolinario/Multi-Modal-Comparators --branch gradient_checkpointing
@@ -32,11 +34,9 @@ RUN poetry build; pip install dist/mmc*.whl
 WORKDIR /src
 RUN python Multi-Modal-Comparators/src/mmc/napm_installs/__init__.py
 
-COPY download-models.py .
-#RUN python download-models.py
+VOLUME [ "/src/models" ]
+VOLUME [ "/root/.cache" ]
 
-COPY majesty.py .
-COPY latent.py .
-COPY majesty-dreamer.py .
-COPY latent_settings_library .
+COPY *.py .
+COPY *.ipynb .
 ENTRYPOINT ["python", "majesty-dreamer.py"]
