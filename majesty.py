@@ -1367,23 +1367,26 @@ def do_run():
 
                                 torch.cuda.empty_cache()
                                 gc.collect()
-
-                                subprocess.call(
-                                    [
-                                        "python",
-                                        "inference_gfpgan.py",
-                                        "-i",
-                                        temp_file,
-                                        "-o",
-                                        "results",
-                                        "-v",
-                                        str(GFP_ver),
-                                        "-s",
-                                        str(GFP_factor),
-                                    ],
-                                    cwd="./GFPGAN",
-                                    shell=True,
-                                )
+                                try:
+                                    res = subprocess.check_output(
+                                        [
+                                            "python",
+                                            "inference_gfpgan.py",
+                                            "-i",
+                                            temp_file,
+                                            "-o",
+                                            "results",
+                                            "-v",
+                                            str(GFP_ver),
+                                            "-s",
+                                            str(GFP_factor),
+                                        ],
+                                        cwd="./GFPGAN",
+                                        shell=True,
+                                    )
+                                    print(res)
+                                except subprocess.CalledProcessError as e:
+                                    print(f"GFPGAN execute failed {e.output}")
 
                                 face_corrected = Image.open(
                                     fetch(
