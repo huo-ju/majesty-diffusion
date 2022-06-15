@@ -216,7 +216,7 @@ has_purged = True
 model_source = None
 
 
-def download_models():
+def download_models(ongo=False, erlich=False):
     # download models as needed
     models = [
         [
@@ -226,14 +226,6 @@ def download_models():
         [
             "txt2img-f8-large-jack000-finetuned-fp16.ckpt",
             "https://huggingface.co/multimodalart/compvis-latent-diffusion-text2img-large/resolve/main/txt2img-f8-large-jack000-finetuned-fp16.ckpt",
-        ],
-        [
-            "ongo.pt",
-            "https://huggingface.co/laion/ongo/resolve/main/ongo.pt",
-        ],
-        [
-            "erlich.pt",
-            "https://huggingface.co/laion/erlich/raw/main/model/ema_0.9999_120000.pt",
         ],
         [
             "ava_vit_l_14_336_linear.pth",
@@ -272,6 +264,20 @@ def download_models():
             "https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth",
         ],
     ]
+    if ongo:
+        models.append(
+            [
+                "ongo.pt",
+                "https://huggingface.co/laion/ongo/resolve/main/ongo.pt",
+            ]
+        )
+    if erlich:
+        models.append(
+            [
+                "erlich.pt",
+                "https://huggingface.co/laion/erlich/resolve/main/model/ema_0.9999_120000.pt",
+            ]
+        )
 
     if not os.path.exists(model_path):
         os.makedirs(model_path)
