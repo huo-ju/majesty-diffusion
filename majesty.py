@@ -1254,7 +1254,7 @@ def do_run():
         sampler = DDIMSampler(model)
 
     os.makedirs(opt.outdir, exist_ok=True)
-    outpath = opt.outdir
+    outpath = os.path.abspath(opt.outdir)
 
     prompt = opt.prompt
     sample_path = os.path.join(outpath, "samples")
@@ -1366,7 +1366,7 @@ def do_run():
 
                                 torch.cuda.empty_cache()
                                 gc.collect()
-                                cmd = f"python inference_gfpgan.py -i ../{temp_file} -o results -v {GFP_ver} -s {GFP_factor}"
+                                cmd = f"python inference_gfpgan.py -i {temp_file} -o results -v {GFP_ver} -s {GFP_factor}"
                                 print(cmd + "\n")
                                 try:
                                     subprocess.call(
