@@ -1381,7 +1381,7 @@ def do_run():
                                         "-s",
                                         str(GFP_factor),
                                     ],
-                                    cwd="GFPGAN",
+                                    cwd="./GFPGAN",
                                     shell=True,
                                 )
 

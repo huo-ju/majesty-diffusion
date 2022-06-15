@@ -36,5 +36,4 @@ VOLUME [ "/root/.cache" ]
 
 COPY majesty.py .
 COPY latent.py .
-COPY latent_settings_library .
 ENTRYPOINT ["python", "latent.py"]
