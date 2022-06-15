@@ -136,6 +136,7 @@ while datetime.datetime.now() < runUntil:
                 queue_name, session_id=session_id, max_wait_time=15
             ) as receiver:
                 session = receiver.session
+                print(f"polling session {session.session_id}\n", flush=True)
                 for message in receiver:
                     lock_renewal.register(receiver, session)
                     request_id: str = str(message)
@@ -155,10 +156,11 @@ while datetime.datetime.now() < runUntil:
                             print(f"Completion retry failed: {e}")
                     runUntil = datetime.datetime.now() + datetime.timedelta(minutes=1)
     except Exception as e:
-        print(f"Listen failed: {e}")
+        print(f"Listen failed: {e}", flush=True)
         sleep(5)
 
 while True:
+    print("idle, requesting shutdown\n", flush=True)
     worker_env = os.getenv("NIGHTMAREBOT_WORKER_ENV")
     worker_id = os.getenv("NIGHTMAREBOT_WORKER_ID")
     response = requests.post(
