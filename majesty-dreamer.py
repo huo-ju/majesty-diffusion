@@ -143,7 +143,11 @@ while datetime.datetime.now() < runUntil:
                     try:
                         process(request_id)
                     except Exception as e:
-                        print(f"Error processing request:{e}", flush=True)
+                        print(
+                            f"Error processing request, stopping process:{e}",
+                            flush=True,
+                        )
+                        exit
                     try:
                         receiver.complete_message(message)
                     except Exception as e:
