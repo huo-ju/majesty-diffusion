@@ -42,4 +42,6 @@ VOLUME [ "/root/.cache" ]
 COPY *.py ./
 COPY *.ipynb ./
 
+ENV TOKENIZERS_PARALLELISM=true
+
 ENTRYPOINT ["python", "majesty-dreamer.py"]

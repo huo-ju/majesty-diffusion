@@ -126,14 +126,14 @@ majesty.download_models()
 
 # Run for 5 minutes without messages then request shutdown
 runUntil = datetime.datetime.now() + datetime.timedelta(minutes=1)
-while datetime.datetime.now() < runUntil:
-    try:
-        with ServiceBusClient.from_connection_string(connstr) as client:
+with ServiceBusClient.from_connection_string(connstr) as client:
+    while datetime.datetime.now() < runUntil:
+        try:
             session_id = os.getenv("NIGHTMAREBOT_SESSION_ID")
             if session_id == "" or session_id == None:
                 session_id = NEXT_AVAILABLE_SESSION
             with client.get_queue_receiver(
-                queue_name, session_id=session_id, max_wait_time=15
+                queue_name, session_id=session_id, max_wait_time=60
             ) as receiver:
                 session = receiver.session
                 print(f"polling session {session.session_id}\n", flush=True)
@@ -144,10 +144,9 @@ while datetime.datetime.now() < runUntil:
                         process(request_id)
                     except Exception as e:
                         print(
-                            f"Error processing request, stopping process:{e}",
+                            f"Error processing request:{e}",
                             flush=True,
                         )
-                        exit
                     try:
                         receiver.complete_message(message)
                     except Exception as e:
@@ -159,9 +158,9 @@ while datetime.datetime.now() < runUntil:
                         except Exception as e:
                             print(f"Completion retry failed: {e}")
                     runUntil = datetime.datetime.now() + datetime.timedelta(minutes=1)
-    except Exception as e:
-        print(f"Listen failed: {e}", flush=True)
-        sleep(5)
+        except Exception as e:
+            print(f"Listen failed: {e}", flush=True)
+            sleep(5)
 
 while True:
     print("idle, requesting shutdown\n", flush=True)
