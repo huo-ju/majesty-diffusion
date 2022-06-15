@@ -17,7 +17,7 @@ sys.path.append("./latent-diffusion")
 from ldm.util import instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
-from ldm.modules.diffusionmodules.util import noise_like
+from ldm.modules.diffusionmodules.util import noise_like, make_ddim_sampling_parameters
 import tensorflow as tf
 from dotmap import DotMap
 import ipywidgets as widgets
@@ -51,7 +51,8 @@ from torchvision.transforms import functional as TF
 from numpy import nan
 from threading import Thread
 import time
-import json
+import re
+import base64
 import warnings
 
 import mmc
@@ -64,6 +65,9 @@ outputs_path = "results"
 device = None
 opt = DotMap()
 
+# Model
+latent_diffusion_model = "finetuned"
+
 # Change it to false to not use CLIP Guidance at all
 use_cond_fn = True
 
@@ -71,27 +75,30 @@ use_cond_fn = True
 custom_schedule_setting = [
     [50, 1000, 8],
     "gfpgan:1.5",
+    "scale:.9",
+    "noise:.55",
     [5, 200, 5],
-    # "gfpgan:1.5",
-    # [50,200,5],
 ]
 
 # Cut settings
-clamp_index = [2, 1.4]  # linear variation of the index for clamping the gradient
+clamp_index = [2.4, 2.1]  # linear variation of the index for clamping the gradient
 cut_overview = [8] * 500 + [4] * 500
 cut_innercut = [0] * 500 + [4] * 500
 cut_ic_pow = 0.2
 cut_icgray_p = [0.1] * 300 + [0] * 1000
 cutn_batches = 1
-cut_blur_n = [0] * 400 + [0] * 600
+cut_blur_n = [0] * 300 + [0] * 1000
 cut_blur_kernel = 3
-range_index = [0] * 1000
+range_index = [0] * 200 + [5e4] * 400 + [0] * 1000
+var_index = [2] * 300 + [0] * 700
+var_range = 0.5
+mean_index = [0] * 400 + [0] * 600
+mean_range = 0.75
 active_function = (
     "softsign"  # function to manipulate the gradient - help things to stablize
 )
 ths_method = "softsign"
 tv_scales = [600] * 1 + [50] * 1 + [0] * 2
-latent_tv_loss = True  # Applies the TV Loss in the Latent space instead of pixel, improves generation quality
 
 # If you uncomment next line you can schedule the CLIP guidance across the steps. Otherwise the clip_guidance_scale basic setting will be used
 # clip_guidance_schedule = [10000]*300 + [500]*700
@@ -100,28 +107,32 @@ symmetric_loss_scale = 0  # Apply symmetric loss
 
 # Latent Diffusion Advanced Settings
 scale_div = 1  # Use when latent upscale to correct satuation problem
-opt_mag_mul = 15  # Magnify grad before clamping
+opt_mag_mul = 20  # Magnify grad before clamping
 # PLMS Currently not working, working on a fix
-# opt.plms = False #Won;=t work with clip guidance
-opt_ddim_eta, opt_eta_end = [1.5, 1.2]  # linear variation of eta
-opt_temperature = 0.95
+opt_plms = False  # Experimental. It works but does not lookg good
+opt_ddim_eta, opt_eta_end = [1.3, 1.1]  # linear variation of eta
+opt_temperature = 0.98
 
 # Grad advanced settings
 grad_center = False
-grad_scale = 0.75  # Lower value result in more coherent and detailed result, higher value makes it focus on more dominent concept
+grad_scale = 0.25  # Lower value result in more coherent and detailed result, higher value makes it focus on more dominent concept
 
 # Restraints the model from exploding despite larger clamp
 score_modifier = True
-threshold_percentile = 0.9
-threshold = 1.2
-var_index = [0] * 1000
+threshold_percentile = 0.85
+threshold = 1
+score_corrector_setting = ["latent", ""]
 
 # Init image advanced settings
 init_rotate, mask_rotate = [False, False]
-init_magnitude = 0.15
+init_magnitude = 0.18215
+
+# Noise settings
+upscale_noise_temperature = 1
+upscale_xT_temperature = 1
 
 # More settings
-RGB_min, RGB_max = [-1, 1]
+RGB_min, RGB_max = [-0.95, 0.95]
 padargs = {"mode": "constant", "value": -1}  # How to pad the image with cut_overview
 flip_aug = False
 cutout_debug = False
@@ -135,17 +146,17 @@ experimental_aesthetic_embeddings_score = 8
 
 # For fun dont change except if you really know what your are doing
 grad_blur = False
-compress_steps = 0
+compress_steps = 200
 compress_factor = 0.1
-punish_steps = 0
-punish_factor = 0.8
+punish_steps = 200
+punish_factor = 0.5
 
 # Amp up your prompt game with prompt engineering, check out this guide: https://matthewmcateer.me/blog/clip-prompt-engineering/
 # Prompt for CLIP Guidance
-clip_prompts = ["portrait of a Majestic Princess, trending on artstation"]
+clip_prompts = ["The portrait of a Majestic Princess, trending on artstation"]
 
 # Prompt for Latent Diffusion
-latent_prompts = ["portrait of a Majestic Princess, trending on artstation"]
+latent_prompts = ["The portrait of a Majestic Princess, trending on artstation"]
 
 # Negative prompts for Latent Diffusion
 latent_negatives = [""]
@@ -154,8 +165,8 @@ image_prompts = []
 
 width = 256
 height = 256
-latent_diffusion_guidance_scale = 15
-clip_guidance_scale = 5000
+latent_diffusion_guidance_scale = 12
+clip_guidance_scale = 16000
 how_many_batches = 1
 aesthetic_loss_scale = 400
 augment_cuts = True
@@ -179,9 +190,7 @@ model = {}
 aes_scale = None
 aug = None
 
-clip_model, clip_size, clip_tokenize, clip_normalize = {}, {}, {}, {}
-clip_list, clip_load_list, clip_guidance_index = [], [], []
-
+clip_load_list, clip_guidance_index = [], []
 
 aesthetic_model_336, aesthetic_model_224, aesthetic_model_16, aesthetic_model_32 = (
     {},
@@ -202,7 +211,7 @@ prompts = []
 mmc_models = []
 last_step_uspcale_list = []
 
-has_purged = False
+has_purged = True
 
 # Used to override download locations, allows rehosting models in a bucket for ephemeral servers to download
 model_source = None
@@ -216,8 +225,16 @@ def download_models():
             "https://ommer-lab.com/files/latent-diffusion/nitro/txt2img-f8-large/model.ckpt",
         ],
         [
-            "finetuned_state_dict.pt",
-            "https://huggingface.co/multimodalart/compvis-latent-diffusion-text2img-large/resolve/main/finetuned_state_dict.pt",
+            "txt2img-f8-large-jack000-finetuned-fp16.ckpt",
+            "https://huggingface.co/multimodalart/compvis-latent-diffusion-text2img-large/resolve/main/txt2img-f8-large-jack000-finetuned-fp16.ckpt",
+        ],
+        [
+            "ongo.pt",
+            "https://huggingface.co/laion/ongo/resolve/main/ongo.pt",
+        ],
+        [
+            "erlich.pt",
+            "https://huggingface.co/laion/erlich/raw/main/model/ema_0.9999_120000.pt",
         ],
         [
             "ava_vit_l_14_336_linear.pth",
@@ -284,18 +301,39 @@ def load_model_from_config(
 ):
     print(f"Loading model from {ckpt}")
     print(latent_diffusion_model)
-    model = instantiate_from_config(config.model)
-    sd = torch.load(ckpt, map_location="cuda")["state_dict"]
-    m, u = model.load_state_dict(sd, strict=False)
+    if latent_diffusion_model != "finetuned":
+        sd = torch.load(ckpt, map_location="cuda")["state_dict"]
+        m, u = model.load_state_dict(sd, strict=False)
+
     if latent_diffusion_model == "finetuned":
-        del sd
-        sd_finetune = torch.load(
-            f"{model_path}/finetuned_state_dict.pt", map_location="cuda"
+        sd = torch.load(
+            f"{model_path}/txt2img-f8-large-jack000-finetuned-fp16.ckpt",
+            map_location="cuda",
         )
-        m, u = model.model.load_state_dict(sd_finetune, strict=False)
-        model.model = model.model.half().eval().to(device)
-        del sd_finetune
-    #   sd = pl_sd["state_dict"]
+        m, u = model.load_state_dict(sd, strict=False)
+        # model.model = model.model.half().eval().to(device)
+
+    if latent_diffusion_model.startswith("ongo"):
+        del sd
+        sd_finetuned = torch.load(f"{model_path}/ongo.pt")
+        sd_finetuned["input_blocks.0.0.weight"] = sd_finetuned[
+            "input_blocks.0.0.weight"
+        ][:, 0:4, :, :]
+        model.model.diffusion_model.load_state_dict(sd_finetuned, strict=False)
+        del sd_finetuned
+        torch.cuda.empty_cache()
+        gc.collect()
+
+    if latent_diffusion_model.startswith("erlich"):
+        del sd
+        sd_finetuned = torch.load(f"{model_path}/erlich.pt")
+        sd_finetuned["input_blocks.0.0.weight"] = sd_finetuned[
+            "input_blocks.0.0.weight"
+        ][:, 0:4, :, :]
+        model.model.diffusion_model.load_state_dict(sd_finetuned, strict=False)
+        del sd_finetuned
+        torch.cuda.empty_cache()
+        gc.collect()
 
     if len(m) > 0 and verbose:
         print("missing keys:")
@@ -467,8 +505,10 @@ def tv_loss(input):
     return (x_diff**2 + y_diff**2).mean([1, 2, 3])
 
 
+# def range_loss(input, range_min, range_max):
+#    return ((input - input.clamp(range_min,range_max)).abs()*10).pow(2).mean([1, 2, 3])
 def range_loss(input, range_min, range_max):
-    return (input - input.clamp(range_min, range_max)).pow(2).mean([1, 2, 3])
+    return ((input - input.clamp(range_min, range_max)).abs()).mean([1, 2, 3])
 
 
 def symmetric_loss(x):
@@ -503,6 +543,16 @@ def to_pil_image(x):
     return TF.to_pil_image((x.clamp(-1, 1) + 1) / 2)
 
 
+def base64_to_image(base64_str, image_path=None):
+    base64_data = re.sub("^data:image/.+;base64,", "", base64_str)
+    binary_data = base64.b64decode(base64_data)
+    img_data = io.BytesIO(binary_data)
+    img = Image.open(img_data)
+    if image_path:
+        img.save(image_path)
+    return img
+
+
 def centralized_grad(x, use_gc=True, gc_conv_only=False):
     if use_gc:
         if gc_conv_only:
@@ -519,7 +569,9 @@ def cond_fn(x, t):
     cur_step += 1
     t = 1000 - t
     t = t[0]
+    x = x.detach()
     with torch.enable_grad():
+        global clamp_start_, clamp_max
         x = x.detach()
         x = x.requires_grad_()
         x_in = model.decode_first_stage(x)
@@ -583,20 +635,7 @@ def cond_fn(x, t):
                 )
                 dists = spherical_dist_loss(image_embeds, target_embeds_temp)
                 dists = dists.mean(1).mul(weights[i].squeeze()).mean()
-                losses += (
-                    dists
-                    * clip_guidance_scale
-                    * (
-                        2
-                        if i
-                        in [
-                            "ViT-L-14-336--openai",
-                            "RN50x64--openai",
-                            "ViT-B-32--laion2b_e16",
-                        ]
-                        else (0.4 if "cloob" in i else 1)
-                    )
-                )
+                losses += dists * clip_guidance_scale
                 if i == "ViT-L-14-336--openai" and aes_scale != 0:
                     aes_loss = (
                         aesthetic_model_336(F.normalize(image_embeds, dim=-1))
@@ -622,16 +661,7 @@ def cond_fn(x, t):
             # losses = losses / len(clip_list)
             # gc.collect()
 
-        tv_losses = (
-            tv_loss(x).sum() * tv_scales[0]
-            + tv_loss(F.interpolate(x, scale_factor=1 / 2)).sum() * tv_scales[1]
-            + tv_loss(F.interpolate(x, scale_factor=1 / 4)).sum() * tv_scales[2]
-            + tv_loss(F.interpolate(x, scale_factor=1 / 8)).sum() * tv_scales[3]
-        )
-        range_scale = range_index[t]
-        range_losses = range_loss(x_in, RGB_min, RGB_max).sum() * range_scale
-        var_scale = var_index[t]
-        loss = tv_losses + range_losses + losses
+        loss = losses
         # del losses
         if symmetric_loss_scale != 0:
             loss += symmetric_loss(x_in) * symmetric_loss_scale
@@ -639,6 +669,9 @@ def cond_fn(x, t):
             lpips_loss = (lpips_model(x_in, init) * init_scale).squeeze().mean()
             # print(lpips_loss)
             loss += lpips_loss
+        range_scale = range_index[t]
+        range_losses = range_loss(x_in, RGB_min, RGB_max).sum() * range_scale
+        loss += range_losses
         # loss_grad = torch.autograd.grad(loss, x_in, )[0]
         # x_in_grad += loss_grad
         # grad = -torch.autograd.grad(x_in, x, x_in_grad)[0]
@@ -672,11 +705,21 @@ def cond_fn(x, t):
         x = x.detach()
         x = x.requires_grad_()
         var = x.var()
-        var_losses = (var.pow(2).clamp(min=1) - 1) * var_scale
-        var_losses.backward()
+        var_scale = var_index[t]
+        var_losses = (var.pow(2).clamp(min=var_range) - 1) * var_scale
+        mean_scale = mean_index[t]
+        mean_losses = (x.mean().abs() - mean_range).abs().clamp(min=0) * mean_scale
+        tv_losses = (
+            tv_loss(x).sum() * tv_scales[0]
+            + tv_loss(F.interpolate(x, scale_factor=1 / 2)).sum() * tv_scales[1]
+            + tv_loss(F.interpolate(x, scale_factor=1 / 4)).sum() * tv_scales[2]
+            + tv_loss(F.interpolate(x, scale_factor=1 / 8)).sum() * tv_scales[3]
+        )
+        adjust_losses = tv_losses + var_losses + mean_losses
+        adjust_losses.backward()
         grad -= x.grad
-        print(grad.abs().mean(), x.grad.abs().mean(), end="\r")
-    return grad
+        # print(grad.abs().mean(), x.grad.abs().mean(), end = "\r")
+        return grad
 
 
 def null_fn(x_in):
@@ -690,7 +733,8 @@ def display_handler(x, i, cadance=5, decode=True):
         if decode:
             x = model.decode_first_stage(x)
         grid = make_grid(
-            torch.clamp((x + 1.0) / 2.0, min=0.0, max=1.0), round(x.shape[0] ** 0.5)
+            torch.clamp((x + 1.0) / 2.0, min=0.0, max=1.0),
+            round(x.shape[0] ** 0.5 + 0.2),
         )
         grid = 255.0 * rearrange(grid, "c h w -> h w c").detach().cpu().numpy()
         image_grid = grid.copy(order="C")
@@ -781,6 +825,9 @@ def generate_settings_file(add_prompts=False, add_dimensions=False):
         dimensions = ""
     settings = f"""
     #This settings file can be loaded back to Latent Majesty Diffusion. If you like your setting consider sharing it to the settings library at https://github.com/multimodalart/MajestyDiffusion
+    [model]
+    latent_diffusion_model = {latent_diffusion_model}
+    
     [clip_list]
     perceptors = {clip_load_list}
     
@@ -797,7 +844,6 @@ def generate_settings_file(add_prompts=False, add_dimensions=False):
     starting_timestep = {starting_timestep}
     init_scale = {init_scale} 
     init_brightness = {init_brightness}
-    init_noise = {init_noise}
 
     [advanced_settings]
     #Add CLIP Guidance and all the flavors or just run normal Latent Diffusion
@@ -844,6 +890,8 @@ def generate_settings_file(add_prompts=False, add_dimensions=False):
     threshold_percentile = {threshold_percentile}
     threshold = {threshold}
     var_index = {list_mul_to_array(var_index)}
+    mean_index = {list_mul_to_array(mean_index)}
+    mean_range = {mean_range}
     
     #Init image advanced settings
     init_rotate={init_rotate}
@@ -874,8 +922,9 @@ def generate_settings_file(add_prompts=False, add_dimensions=False):
     return settings
 
 
-def load_clip_models():
-    global clip_model, clip_size, clip_tokenize, clip_normalize, clip_list
+def load_clip_models(mmc_models):
+    clip_model, clip_size, clip_tokenize, clip_normalize = {}, {}, {}, {}
+    clip_list = []
     for item in mmc_models:
         print("Loaded ", item["id"])
         clip_list.append(item["id"])
@@ -886,13 +935,21 @@ def load_clip_models():
             clip_size[item["id"]] = clip_model[item["id"]].visual.input_resolution
             clip_tokenize[item["id"]] = clip_model[item["id"]].preprocess_text()
             clip_normalize[item["id"]] = normalize
+    return clip_model, clip_size, clip_tokenize, clip_normalize, clip_list
 
 
-def full_clip_load():
+def full_clip_load(clip_load_list):
     torch.cuda.empty_cache()
     gc.collect()
-    get_mmc_models()
-    load_clip_models()
+    try:
+        del clip_model, clip_size, clip_tokenize, clip_normalize, clip_list
+    except:
+        pass
+    mmc_models = get_mmc_models(clip_load_list)
+    clip_model, clip_size, clip_tokenize, clip_normalize, clip_list = load_clip_models(
+        mmc_models
+    )
+    return clip_model, clip_size, clip_tokenize, clip_normalize, clip_list
 
 
 # Alstro's aesthetic model
@@ -966,7 +1023,9 @@ def config_options():
     opt.n_iter = how_many_batches
     opt.n_samples = n_samples
     opt.scale = latent_diffusion_guidance_scale
+    opt.plms = opt_plms
     aug = augment_cuts
+    # Checks if it's not a normal schedule (legacy purposes to keep old configs compatible)
     if len(clamp_index) == 2:
         clamp_index_variation = np.linspace(clamp_index[0], clamp_index[1], 1000)
     else:
@@ -986,14 +1045,14 @@ def modify_score(e_t, e_t_uncond):
             dim=-1,
         )
 
-        s.clamp_(min=1.0)
-        s = s.view(-1, *((1,) * (e_t_d.ndim - 1)))
-        if ths_method == "softsign":
-            e_t_d = F.softsign(e_t_d * 3) / s / 3
-        elif ths_method == "clamp":
-            e_t_d = e_t_d.clamp(-s, s) / s
-        e_t = e_t_uncond + e_t_d
-        return e_t
+    s.clamp_(min=1.0)
+    s = s.view(-1, *((1,) * (e_t_d.ndim - 1)))
+    if ths_method == "softsign":
+        e_t_d = F.softsign(e_t_d) / s
+    elif ths_method == "clamp":
+        e_t_d = e_t_d.clamp(-s, s) / s * 1.3  # 1.2
+    e_t = e_t_uncond + e_t_d
+    return e_t
 
 
 def use_args(args: argparse.Namespace):
@@ -1031,6 +1090,7 @@ def load_custom_settings():
                 elem in incoming_perceptors for elem in clip_load_list
             ):
                 clip_load_list = incoming_perceptors
+                has_purged = True
 
         # Load settings from config and replace variables
         if config.has_section("basic_settings"):
@@ -1044,13 +1104,23 @@ def load_custom_settings():
                 global_var_scope[advanced_setting[0]] = eval(advanced_setting[1])
 
 
+def dynamic_thresholding(pred_x0, t):
+    return pred_x0
+
+
 def do_run():
     global has_purged
     if has_purged:
         global clip_model, clip_size, clip_tokenize, clip_normalize, clip_list
-        full_clip_load()
+        (
+            clip_model,
+            clip_size,
+            clip_tokenize,
+            clip_normalize,
+            clip_list,
+        ) = full_clip_load(clip_load_list)
         has_purged = False
-    global opt, model, p, base_count, make_cutouts, progress, target_embeds, weights, zero_embed, init, scale_factor, cur_step
+    global opt, model, p, base_count, make_cutouts, progress, target_embeds, weights, zero_embed, init, scale_factor, cur_step, uc, c
     if generate_video:
         fps = 24
         p = Popen(
@@ -1103,9 +1173,13 @@ def do_run():
                 weights[i].append(weight)
 
     for prompt in image_prompts:
-        print(f"processing{prompt}", end="\r")
-        path, weight = parse_prompt(prompt)
-        img = Image.open(fetch(path)).convert("RGB")
+        if prompt.startswith("data:"):
+            img = base64_to_image(prompt).convert("RGB")
+            weight = 1
+        else:
+            print(f"processing{prompt}", end="\r")
+            path, weight = parse_prompt(prompt)
+            img = Image.open(fetch(path)).convert("RGB")
         img = TF.resize(
             img, min(opt.W, opt.H, *img.size), transforms.InterpolationMode.LANCZOS
         )
@@ -1141,28 +1215,34 @@ def do_run():
     mask = None
     transform = T.GaussianBlur(kernel_size=3, sigma=0.4)
     if init_image is not None:
-        init = Image.open(fetch(init_image)).convert("RGB")
+        if init_image.startswith("data:"):
+            img = base64_to_image(init_image).convert("RGB")
+        else:
+            img = Image.open(fetch(init_image)).convert("RGB")
         init = TF.to_tensor(init).to(device).unsqueeze(0)
         if init_rotate:
             init = torch.rot90(init, 1, [3, 2])
+        x0_original = torch.tensor(init)
         init = resize(init, out_shape=[opt.n_samples, 3, opt.H, opt.W])
         init = init.mul(2).sub(1).half()
         init_encoded = (
             model.first_stage_model.encode(init).sample() * init_magnitude
             + init_brightness
         )
-        init_encoded = init_encoded + noise_like(init_encoded.shape, device, False).mul(
-            init_noise
-        )
+        # init_encoded = init_encoded + noise_like(init_encoded.shape, device, False).mul(
+        #    init_noise
+        # )
+        upscaled_flag = True
     else:
         init = None
         init_encoded = None
+        upscaled_flag = False
     if init_mask is not None:
         mask = Image.open(fetch(init_mask)).convert("RGB")
         mask = TF.to_tensor(mask).to(device).unsqueeze(0)
         if mask_rotate:
-            mask = torch.rot90(init, 1, [3, 2])
-        mask = resize(mask, out_shape=[opt.n_samples, 1, opt.H // 8, opt.W // 8])
+            mask = torch.rot90(mask, 1, [3, 2])
+        mask = F.interpolate(mask, [opt.H // 8, opt.W // 8]).mean(1)
         mask = transform(mask)
         print(mask)
 
@@ -1199,11 +1279,17 @@ def do_run():
                     c = model.get_learned_conditioning(opt.n_samples * prompt).cuda()
                     if init_encoded is None:
                         x_T = torch.randn([opt.n_samples, *shape], device=device)
+                        upscaled_flag = False
+                        x0 = None
                     else:
                         x_T = init_encoded
-
+                        x = torch.tensor(x_T)
+                        upscaled_flag = True
+                    last_step_uspcale_list = []
+                    diffusion_stages = 0
                     for custom_schedule in custom_schedules:
                         if type(custom_schedule) != type(""):
+                            diffusion_stages += 1
                             torch.cuda.empty_cache()
                             gc.collect()
                             last_step_upscale = False
@@ -1216,7 +1302,9 @@ def do_run():
                                 verbose=False,
                                 unconditional_guidance_scale=opt.scale,
                                 unconditional_conditioning=uc,
-                                eta=eta1,
+                                eta=eta1
+                                if diffusion_stages == 1 or last_step_upscale
+                                else eta2,
                                 eta_end=eta2,
                                 img_callback=None if use_cond_fn else display_handler,
                                 cond_fn=cond_fn if use_cond_fn else None,
@@ -1226,9 +1314,15 @@ def do_run():
                                 x0=x_T,
                                 mask=mask,
                                 score_corrector=score_corrector,
-                                corrector_kwargs={},
+                                corrector_kwargs=score_corrector_setting,
+                                x0_adjust_fn=dynamic_thresholding,
+                                clip_embed=target_embeds["ViT-L-14--openai"]
+                                if "ViT-L-14--openai" in clip_list
+                                else None,
                             )
                             x_T = samples_ddim.clamp(-6, 6)
+                            x_T = samples_ddim
+                            last_step_upscale = False
                         else:
                             torch.cuda.empty_cache()
                             gc.collect()
@@ -1256,8 +1350,10 @@ def do_run():
                                     model.first_stage_model.encode(init).sample()
                                     * init_magnitude
                                 )
-                                x_T += noise_like(x_T.shape, device, False) * init_noise
-                                x_T = x_T.clamp(-6, 6)
+                                upscaled_flag = True
+                                last_step_upscale = True
+                                # x_T += noise_like(x_T.shape,device,False)*init_noise
+                                # x_T = x_T.clamp(-6,6)
                             if method == "gfpgan":
                                 scale_factor = float(scale_factor)
                                 last_step_upscale = True
@@ -1274,7 +1370,7 @@ def do_run():
 
                                 subprocess.call(
                                     [
-                                        "python3",
+                                        "python",
                                         "inference_gfpgan.py",
                                         "-i",
                                         temp_file,
@@ -1286,7 +1382,7 @@ def do_run():
                                         str(GFP_factor),
                                     ],
                                     cwd="GFPGAN",
-                                    shell=False,
+                                    shell=True,
                                 )
 
                                 face_corrected = Image.open(
@@ -1318,24 +1414,33 @@ def do_run():
                                     model.first_stage_model.encode(init).sample()
                                     * init_magnitude
                                 )
-                                x_T += noise_like(x_T.shape, device, False) * init_noise
-                                x_T = x_T.clamp(-6, 6)
-                            if method == "purge":
-                                has_purged = True
-                                for i in scale_factor.split(","):
-                                    if i in clip_load_list:
-                                        arch, pub, m_id = i[1:-1].split(" - ")
-                                        print("Purge ", i)
-                                        del clip_list[clip_list.index(m_id)]
-                                        del clip_model[m_id]
-                                        del clip_size[m_id]
-                                        del clip_tokenize[m_id]
-                                        del clip_normalize[m_id]
-
+                                upscaled_flag = True
+                                # x_T += noise_like(x_T.shape,device,False)*init_noise
+                                # x_T = x_T.clamp(-6,6)
+                                if method == "scale":
+                                    scale_factor = float(scale_factor)
+                                    x_T = x_T * scale_factor
+                                if method == "noise":
+                                    scale_factor = float(scale_factor)
+                                    x_T += (
+                                        noise_like(x_T.shape, device, False)
+                                        * scale_factor
+                                    )
+                                if method == "purge":
+                                    has_purged = True
+                                    for i in scale_factor.split(","):
+                                        if i in clip_load_list:
+                                            arch, pub, m_id = i[1:-1].split(" - ")
+                                            print("Purge ", i)
+                                            del clip_list[clip_list.index(m_id)]
+                                            del clip_model[m_id]
+                                            del clip_size[m_id]
+                                            del clip_tokenize[m_id]
+                                            del clip_normalize[m_id]
                     # last_step_uspcale_list.append(last_step_upscale)
                     scale_factor = 1
                     current_time = str(round(time.time()))
-                    if last_step_upscale:
+                    if last_step_upscale and method == "gfpgan":
                         latest_upscale = Image.open(
                             fetch(f"GFPGAN/results/restored_imgs/{temp_file_name}")
                         ).convert("RGB")

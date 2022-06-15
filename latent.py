@@ -89,7 +89,7 @@ def main(argv):
         "--latent_scale",
         type=float,
         help="Latent diffusion guidance scale",
-        default=2,
+        default=12,
         dest="latent_diffusion_guidance_scale",
     )
     parser.add_argument(
@@ -97,7 +97,7 @@ def main(argv):
         "--clip_scale",
         type=int,
         help="CLIP guidance scale",
-        default=5000,
+        default=16000,
         dest="clip_guidance_scale",
     )
     parser.add_argument(
@@ -112,7 +112,7 @@ def main(argv):
         "--aesthetic_loss_scale",
         type=int,
         help="Aesthetic loss scale",
-        default=200,
+        default=400,
         dest="aesthetic_loss_scale",
     )
     parser.add_argument(
@@ -164,13 +164,13 @@ def main(argv):
         default=0.0,
         dest="init_brightness",
     )
-    parser.add_argument(
-        "--init_noise",
-        type=float,
-        help="How much extra noise to add to the init image, independently from skipping timesteps (use it also if you are upscaling)",
-        default=0.6,
-        dest="init_noise",
-    )
+    #    parser.add_argument(
+    #        "--init_noise",
+    #        type=float,
+    #        help="How much extra noise to add to the init image, independently from skipping timesteps (use it also if you are upscaling)",
+    #        default=0.6,
+    #        dest="init_noise",
+    #    )
     parser.add_argument(
         "--enable_aesthetic_embeddings",
         help="Experimental aesthetic embeddings, work only with OpenAI ViT-B/32 and ViT-L/14",
@@ -181,14 +181,14 @@ def main(argv):
         "--aesthetic_embeddings_weight",
         help="How much you want experimental aesthetic embeddings to influence your result",
         type=float,
-        default=0.5,
+        default=0.3,
         dest="experimental_aesthetic_embeddings_weight",
     )
     parser.add_argument(
         "--aesthetic_embeddings_score",
         help="9 are good aesthetic embeddings, 0 are bad ones",
         type=int,
-        default=9,
+        default=8,
         dest="experimental_aesthetic_embeddings_score",
     )
 
@@ -291,8 +291,6 @@ def main(argv):
     majesty.clip_load_list = clip_load_list
 
     majesty.load_custom_settings()
-
-    majesty.full_clip_load()
 
     majesty.config_init_image()
 
