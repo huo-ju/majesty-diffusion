@@ -208,7 +208,6 @@ scale_factor = 1
 clamp_start_, clamp_max = None, None
 clip_guidance_schedule = None
 prompts = []
-mmc_models = []
 last_step_uspcale_list = []
 
 has_purged = True
@@ -347,8 +346,7 @@ def load_model_from_config(
     return model
 
 
-def get_mmc_models():
-    global mmc_models
+def get_mmc_models(clip_load_list):
     mmc_models = []
     for model_key in clip_load_list:
         if not model_key:
@@ -361,6 +359,7 @@ def get_mmc_models():
                 "id": m_id,
             }
         )
+    return mmc_models
 
 
 def set_custom_schedules():
