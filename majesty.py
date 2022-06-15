@@ -301,6 +301,7 @@ def load_model_from_config(
 ):
     print(f"Loading model from {ckpt}")
     print(latent_diffusion_model)
+    model = instantiate_from_config(config.model)
     if latent_diffusion_model != "finetuned":
         sd = torch.load(ckpt, map_location="cuda")["state_dict"]
         m, u = model.load_state_dict(sd, strict=False)
