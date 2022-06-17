@@ -34,13 +34,17 @@ RUN poetry build; pip install dist/mmc*.whl
 WORKDIR /src
 RUN python Multi-Modal-Comparators/src/mmc/napm_installs/__init__.py
 
-RUN git lfs clone https://huggingface.co/datasets/multimodalart/latent-majesty-diffusion-settings
+#COPY download-models.py .
+#RUN python download-models.py
+#RUN python download-models.py --clip "[clip - mlfoundations - ViT-B-16--openai]"
+#RUN python download-models.py --clip "[clip - mlfoundations - ViT-L-14--openai]"
+#RUN python download-models.py --clip "[clip - mlfoundations - ViT-L-14-336--openai]"
+#RUN python download-models.py --clip "[clip - mlfoundations - ViT-B-32--laion2b_e16]"
 
-VOLUME [ "/src/models" ]
-VOLUME [ "/root/.cache" ]
 
 COPY *.py ./
 COPY *.ipynb ./
+RUN git lfs clone https://huggingface.co/datasets/multimodalart/latent-majesty-diffusion-settings
 
 ENV TOKENIZERS_PARALLELISM=true
 

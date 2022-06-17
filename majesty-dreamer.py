@@ -22,6 +22,8 @@ token = os.environ["NIGHTMAREBOT_WORKER_TOKEN"]
 queue_name = os.environ["NIGHTMAREBOT_QUEUE_NAME"]
 minio_key = os.environ["NIGHTMAREBOT_MINIO_KEY"]
 minio_secret = os.environ["NIGHTMAREBOT_MINIO_SECRET"]
+worker_env = os.getenv("NIGHTMAREBOT_WORKER_ENV")
+worker_id = os.getenv("NIGHTMAREBOT_WORKER_ID")
 
 lock_renewal = AutoLockRenewer(max_workers=4)
 
@@ -37,6 +39,17 @@ connstr = (
     .decode("utf-8")
 )
 
+
+clip_load_list = json.loads(
+    urlopen(
+        Request(
+            f"https://dreamer.nightmarebot.com/clip_load_list",
+            headers={"User-Agent": "Mozilla/5.0"},
+        )
+    )
+    .read()
+    .decode("utf-8")
+)
 
 minio_client = Minio(
     "dumb.dev",
@@ -112,7 +125,9 @@ def process(id: str):
         raise CalledProcessError(p.returncode, p.args)
 
     images = glob.glob(outdir + "/*.png")
-    minio_client.fput_object("nightmarebot-output", f"{id}/{id}.png", images[0])
+    minio_client.fput_object(
+        "nightmarebot-output", f"{id}/{id}.png", images[0], content_type="image/png"
+    )
 
     response = requests.post(
         f"https://nightmarebot.azurewebsites.net/api/ProcessResult?token={token}&id={id}"
@@ -122,18 +137,24 @@ def process(id: str):
 
 
 majesty.model_path = "/root/.cache/majesty"
-majesty.download_models()
+majesty.model_source = "http://models.nmb.ai/majesty"
+import models
+
+models.download_models(majesty.model_path, majesty.model_source, erlich=True, ongo=True)
+models.download_clip(clip_load_list=clip_load_list)
 
 # Run for 5 minutes without messages then request shutdown
 runUntil = datetime.datetime.now() + datetime.timedelta(minutes=1)
 with ServiceBusClient.from_connection_string(connstr) as client:
-    while datetime.datetime.now() < runUntil:
+    while not worker_id or datetime.datetime.now() < runUntil:
         try:
             session_id = os.getenv("NIGHTMAREBOT_SESSION_ID")
+            wait_time = 60 * 5
             if session_id == "" or session_id == None:
                 session_id = NEXT_AVAILABLE_SESSION
+                wait_time = 5
             with client.get_queue_receiver(
-                queue_name, session_id=session_id, max_wait_time=60
+                queue_name, session_id=session_id, max_wait_time=wait_time
             ) as receiver:
                 session = receiver.session
                 print(f"polling session {session.session_id}\n", flush=True)
@@ -148,6 +169,9 @@ with ServiceBusClient.from_connection_string(connstr) as client:
                             flush=True,
                         )
                     try:
+                        runUntil = datetime.datetime.now() + datetime.timedelta(
+                            minutes=1
+                        )
                         receiver.complete_message(message)
                     except Exception as e:
                         print(f"Error completing message:{e}", flush=True)
@@ -157,15 +181,13 @@ with ServiceBusClient.from_connection_string(connstr) as client:
                             ).complete_message(message)
                         except Exception as e:
                             print(f"Completion retry failed: {e}")
-                    runUntil = datetime.datetime.now() + datetime.timedelta(minutes=1)
+
         except Exception as e:
             print(f"Listen failed: {e}", flush=True)
             sleep(5)
 
 while True:
     print("idle, requesting shutdown\n", flush=True)
-    worker_env = os.getenv("NIGHTMAREBOT_WORKER_ENV")
-    worker_id = os.getenv("NIGHTMAREBOT_WORKER_ID")
     response = requests.post(
         f"https://nightmarebot.azurewebsites.net/api/IdleWorker?token={token}&env={worker_env}&id={worker_id}"
     )
