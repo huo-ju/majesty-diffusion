@@ -22,7 +22,7 @@ RUN wget https://models.nmb.ai/majesty/ongo.pt
 
 RUN mkdir -p /root/.cache/clip
 RUN ln -s /src/models /root/.cache/majesty
-WORKDIR /root/cache/clip
+WORKDIR /root/.cache/clip
 RUN wget https://models.nmb.ai/clip/RN50x16.pt
 RUN wget https://models.nmb.ai/clip/RN50x4.pt
 RUN wget https://models.nmb.ai/clip/RN50x64.pt
@@ -57,7 +57,8 @@ RUN pip install ipywidgets
 RUN pip install opencv-python
 RUN pip install jupyterlab
 RUN pip install --upgrade jupyter_http_over_ws>=0.0.7 && \
-    jupyter serverextension enable --py jupyter_http_over_ws
+    jupyter serverextension enable --py jupyter_http_over_ws && \
+    jupyter nbextension enable --py widgetsnbextension
 
 RUN git clone https://github.com/apolinario/Multi-Modal-Comparators --branch gradient_checkpointing
 RUN pip install poetry
