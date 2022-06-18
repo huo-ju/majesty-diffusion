@@ -4,6 +4,34 @@ RUN apt-get update \
     ffmpeg libsm6 libxext6 \
     && apt-get clean
 
+RUN mkdir -p /root/.cache/majesty
+WORKDIR /root/.cache/majesty
+RUN wget https://models.nmb.ai/majesty/latent_diffusion_txt2img_f8_large.ckpt
+RUN wget https://models.nmb.ai/majesty/txt2img-f8-large-jack000-finetuned-fp16.ckpt
+RUN wget https://models.nmb.ai/majesty/GFPGANv1.3.pth
+RUN wget https://models.nmb.ai/majesty/ava_vit_b_16_linear.pth
+RUN wget https://models.nmb.ai/majesty/ava_vit_l_14_336_linear.pth
+RUN wget https://models.nmb.ai/majesty/ava_vit_l_14_linear.pth
+RUN wget https://models.nmb.ai/majesty/imagenet_512x_jpg_embed224.npz
+RUN wget https://models.nmb.ai/majesty/openimages_512x_png_embed224.npz
+RUN wget https://models.nmb.ai/majesty/sa_0_4_vit_b_16_linear.pth
+RUN wget https://models.nmb.ai/majesty/sa_0_4_vit_b_32_linear.pth
+RUN wget https://models.nmb.ai/majesty/sa_0_4_vit_l_14_linear.pth
+RUN wget https://models.nmb.ai/majesty/erlich.pt
+RUN wget https://models.nmb.ai/majesty/ongo.pt
+
+RUN mkdir -p /root/.cache/clip
+WORKDIR /root/.cache/clip
+#RUN wget https://models.nmb.ai/clip/RN50x16.pt
+#RUN wget https://models.nmb.ai/clip/RN50x4.pt
+#RUN wget https://models.nmb.ai/clip/RN50x64.pt
+RUN wget https://models.nmb.ai/clip/ViT-B-16.pt
+#RUN wget https://models.nmb.ai/clip/ViT-B-32.pt
+RUN wget https://models.nmb.ai/clip/ViT-L-14-336px.pt
+RUN wget https://models.nmb.ai/clip/ViT-L-14.pt
+#RUN wget https://models.nmb.ai/clip/vit_b_16_plus_240-laion400m_e32-699c4b84.pt
+RUN wget https://models.nmb.ai/clip/vit_b_32-laion2b_e16-af8dbd0c.pth
+
 RUN mkdir -p /src
 WORKDIR /src
 
