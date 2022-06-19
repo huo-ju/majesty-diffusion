@@ -4,9 +4,11 @@ from omegaconf import OmegaConf
 from subprocess import Popen, PIPE
 import gc
 
+sys.path.append("./latent-diffusion")
 import torch
 import json
 import majesty as majesty
+
 
 
 def main(argv):
@@ -191,6 +193,13 @@ def main(argv):
         default=8,
         dest="experimental_aesthetic_embeddings_score",
     )
+    parser.add_argument(
+        "--latent_diffusion_model",
+        help="Latent diffusion model (original, finetuned, ongo, erlich)",
+        type=str,
+        default="finetuned",
+        dest="latent_diffusion_model"
+    )
 
     args = parser.parse_args()
     majesty.use_args(args)
@@ -200,8 +209,7 @@ def main(argv):
     torch.backends.cudnn.benchmark = True
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     majesty.device = device
-
-    latent_diffusion_model = "finetuned"
+    
     config = OmegaConf.load(
         "./latent-diffusion/configs/latent-diffusion/txt2img-1p4B-eval.yaml"
     )  # TODO: Optionally download from same location as ckpt and chnage this logic
@@ -209,7 +217,7 @@ def main(argv):
         config,
         f"{majesty.model_path}/latent_diffusion_txt2img_f8_large.ckpt",
         False,
-        latent_diffusion_model,
+        majesty.latent_diffusion_model,
     )  # TODO: check path
     majesty.model = model.half().eval().to(device)
     # if(latent_diffusion_model == "finetuned"):

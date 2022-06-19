@@ -1,0 +1,20 @@
+[submodule "latent-diffusion"]
+	path = latent-diffusion
+	url = https://github.com/multimodalart/latent-diffusion
+	branch = 1.6
+[submodule "taming-transformers"]
+	path = taming-transformers
+	url = https://github.com/CompVis/taming-transformers
+[submodule "GFPGAN"]
+	path = GFPGAN
+	url = https://github.com/TencentARC/GFPGAN
+[submodule "aesthetic-predictor"]
+	path = aesthetic-predictor
+	url = https://github.com/LAION-AI/aesthetic-predictor
+[submodule "Multi-Modal-Comparators"]
+	path = Multi-Modal-Comparators
+	url = https://github.com/apolinario/Multi-Modal-Comparators
+	branch = gradient_checkpointing
+[submodule "latent-majesty-diffusion-settings"]
+	path = latent-majesty-diffusion-settings
+	url = https://huggingface.co/datasets/multimodalart/latent-majesty-diffusion-settings

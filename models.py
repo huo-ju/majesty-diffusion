@@ -7,7 +7,7 @@ import argparse
 
 
 def download_models(
-    model_path=os.path.expanduser("~/.cache/majesty"),
+    model_path="models",
     model_source="http://models.nmb.ai/majesty",
     ongo=False,
     erlich=False,

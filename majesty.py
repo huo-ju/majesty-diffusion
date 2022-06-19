@@ -13,14 +13,12 @@ from torchvision.utils import make_grid
 import transformers
 import gc
 
-sys.path.append("./latent-diffusion")
 from ldm.util import instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
 from ldm.modules.diffusionmodules.util import noise_like, make_ddim_sampling_parameters
 import tensorflow as tf
 from dotmap import DotMap
-import ipywidgets as widgets
 from math import pi
 
 from resize_right import resize
@@ -37,7 +35,6 @@ import sys
 import random
 from piq import brisque
 from itertools import product
-from IPython import display
 import lpips
 from PIL import Image, ImageOps
 import requests
@@ -1250,9 +1247,6 @@ def do_run():
         mask = F.interpolate(mask, [opt.H // 8, opt.W // 8]).mean(1)
         mask = transform(mask)
         print(mask)
-
-    if progress:
-        display.display(progress)
 
     if opt.plms:
         sampler = PLMSSampler(model)

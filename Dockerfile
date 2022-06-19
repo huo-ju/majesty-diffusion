@@ -35,7 +35,7 @@ RUN wget https://models.nmb.ai/clip/vit_b_32-laion2b_e16-af8dbd0c.pth
 RUN mkdir -p /src
 WORKDIR /src
 
-RUN git clone https://github.com/multimodalart/latent-diffusion --branch 1.4
+RUN git clone https://github.com/multimodalart/latent-diffusion --branch 1.6
 RUN git clone https://github.com/CompVis/taming-transformers
 RUN git clone https://github.com/TencentARC/GFPGAN
 RUN git lfs clone https://github.com/LAION-AI/aesthetic-predictor

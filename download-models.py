@@ -131,6 +131,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Download models for majesty diffusion"
     )
+    parser.add_argument("--path", help="Download path", dest="model_path", type=str, default="models")
+    parser.add_argument("--model-source", help="Download URL prefix", dest="model_source", type=str, default="https://models.nmb.ai/majesty")
     parser.add_argument(
         "--erlich", help="Download erlich model", dest="erlich", action="store_true"
     )
@@ -152,7 +154,7 @@ def main():
     if args.clip_load_list:
         download_clip(args.clip_load_list)
     else:
-        download_models(ongo=args.ongo, erlich=args.erlich)
+        download_models(model_path=args.model_path, model_source=args.model_source, ongo=args.ongo, erlich=args.erlich)
 
 
 if __name__ == "__main__":
