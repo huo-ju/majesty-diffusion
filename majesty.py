@@ -34,6 +34,7 @@ import io
 import math
 import sys
 import random
+import tempfile
 from piq import brisque
 from itertools import product
 import lpips
@@ -1360,7 +1361,8 @@ def do_run():
                                 temp_file_name = (
                                     "temp_" + f"{str(round(time.time()))}.png"
                                 )
-                                temp_file = os.path.join(sample_path, temp_file_name)
+                                temp_dir_name = tempfile.mkdtemp('gfpgan')
+                                temp_file = os.path.join(temp_dir_name, temp_file_name)
                                 im.save(temp_file, format="PNG")
                                 GFP_factor = 2 if scale_factor > 1 else 1
                                 GFP_ver = 1.3  # if GFP_factor == 1 else 1.2

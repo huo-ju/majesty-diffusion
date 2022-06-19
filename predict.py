@@ -25,7 +25,7 @@ class Predictor(BasePredictor):
     ) -> Path:
         """Run a single prediction on the model"""
 
-        outdir = tempfile.mkdtemp()
+        outdir = tempfile.mkdtemp('majesty')
 
         command = [
                 "python",
