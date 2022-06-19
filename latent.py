@@ -4,7 +4,6 @@ from omegaconf import OmegaConf
 from subprocess import Popen, PIPE
 import gc
 
-sys.path.append("./latent-diffusion")
 import torch
 import json
 import majesty as majesty
