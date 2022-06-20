@@ -230,7 +230,7 @@ def main(argv):
     # @markdown #### Open AI CLIP models
     ViT_B32 = False  # @param {type:"boolean"}
     ViT_B16 = True  # @param {type:"boolean"}
-    ViT_L14 = False  # @param {type:"boolean"}
+    ViT_L14 = True  # @param {type:"boolean"}
     ViT_L14_336px = False  # @param {type:"boolean"}
     # RN101 = False #@param {type:"boolean"}
     # RN50 = False #@param {type:"boolean"}

@@ -126,6 +126,15 @@ def download_clip(clip_load_list):
                 print("Ignoring load error\n")
 
 
+clip_load_defaults = [
+#    "[clip - mlfoundations - ViT-B-32--openai]",
+    "[clip - mlfoundations - ViT-B-16--openai]",
+#    "[clip - mlfoundations - ViT-B-16--laion400m_e32]",
+    "[clip - mlfoundations - ViT-L-14--openai]",
+#    "[clip - mlfoundations - ViT-L-14-336--openai]",
+    "[clip - mlfoundations - ViT-B-32--laion2b_e16]",
+]
+
 def main():
 
     parser = argparse.ArgumentParser(
@@ -147,7 +156,15 @@ def main():
         dest="clip_load_list",
     )
 
+    parser.add_argument(
+        "--clip-defaults", help="Download default CLIP models", dest="clip_defaults", action="store_true"
+    )
+
     args = parser.parse_args()
+
+    if args.clip_defaults:
+        download_clip(clip_load_defaults)
+
 
     if args.clip_load_list:
         download_clip(args.clip_load_list)
