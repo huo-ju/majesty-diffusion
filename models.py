@@ -164,9 +164,7 @@ def main():
 
     if args.clip_defaults:
         download_clip(clip_load_defaults)
-
-
-    if args.clip_load_list:
+    elif args.clip_load_list:
         download_clip(args.clip_load_list)
     else:
         download_models(ongo=args.ongo, erlich=args.erlich)
