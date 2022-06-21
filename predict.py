@@ -1,7 +1,7 @@
 # Prediction interface for Cog ⚙️
 # https://github.com/replicate/cog/blob/main/docs/python.md
 
-from cog import BasePredictor, Input, Path
+from cog import BasePredictor, BaseModel, Input, Path, File
 import tempfile
 import glob
 import models
@@ -24,6 +24,12 @@ current_clip_load_list = [
 #    "[clip - mlfoundations - ViT-L-14-336--openai]",
     "[clip - mlfoundations - ViT-B-32--laion2b_e16]",
 ]
+
+
+class MajestyOutput(BaseModel):
+    images: typing.List[Path]
+    config: File
+
 class Predictor(BasePredictor):
     def load(self):
         config = OmegaConf.load(
@@ -44,12 +50,9 @@ class Predictor(BasePredictor):
         majesty.clip_load_list = current_clip_load_list
         majesty.load_clip_globals(True)
     
-    def setup(self):        
-        os.environ["TOKENIZERS_PARALELLISM"] = "true"
-        # move preloaded clip models into cache
+    def setup(self):                        
         print('Ensuring models are loaded..')
-        models.download_models(model_path=model_path)
-        #models.download_clip(majesty.clip_load_list)
+        models.download_models(model_path=model_path)        
         if not os.path.exists("/src/GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth"):
             shutil.copyfile(
                 f"{model_path}/GFPGANv1.3.pth",
@@ -79,7 +82,7 @@ class Predictor(BasePredictor):
         starting_timestep: float = Input(description="Starting timestep", default=0.9),
         num_batches: int = Input(description="Number of batches", default=1, ge=1, le=10),
         custom_settings: Path = Input(description="Advanced settings file", default=None),
-    ) -> typing.List[Path]:
+    ) -> typing.List[MajestyOutput]:
         """Run a single prediction on the model"""
                             
         if model != current_latent_diffusion_model: # or clip
@@ -123,7 +126,7 @@ class Predictor(BasePredictor):
             torch.cuda.empty_cache()
             gc.collect()
             majesty.do_run()
-            yield Path(glob.glob(outdir+"/*.png")[0])        
+            yield MajestyOutput(image=Path(glob.glob(outdir+"/*.png")[0], settings=majesty.generate_settings_file(add_prompts=False, add_dimensions=True)))
 
         # processed_input = preprocess(image)
         # output = self.model(processed_image, scale)
