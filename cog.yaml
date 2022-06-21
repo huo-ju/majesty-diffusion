@@ -38,28 +38,28 @@ build:
     - git clone https://github.com/apolinario/Multi-Modal-Comparators /tmp/Multi-Modal-Comparators --branch gradient_checkpointing && cd /tmp/Multi-Modal-Comparators && poetry build && pip install dist/mmc*.whl
     - cd /tmp; python Multi-Modal-Comparators/src/mmc/napm_installs/__init__.py
     - echo "Downloading majesty-diffusion models..."
-    - mkdir -p /root/.cache/majesty-diffusion; wget -O /root/.cache/majesty-diffusion/latent_diffusion_txt2img_f8_large.ckpt https://models.nmb.ai/majesty/latent_diffusion_txt2img_f8_large.ckpt
-    - wget -O /root/.cache/majesty-diffusion/txt2img-f8-large-jack000-finetuned-fp16.ckpt https://models.nmb.ai/majesty/txt2img-f8-large-jack000-finetuned-fp16.ckpt
-    - wget -O /root/.cache/majesty-diffusion/GFPGANv1.3.pth https://models.nmb.ai/majesty/GFPGANv1.3.pth
-    - wget -O /root/.cache/majesty-diffusion/ava_vit_b_16_linear.pth https://models.nmb.ai/majesty/ava_vit_b_16_linear.pth
-    - wget -O /root/.cache/majesty-diffusion/ava_vit_l_14_336_linear.pth https://models.nmb.ai/majesty/ava_vit_l_14_336_linear.pth
-    - wget -O /root/.cache/majesty-diffusion/ava_vit_l_14_linear.pth https://models.nmb.ai/majesty/ava_vit_l_14_linear.pth
-    - wget -O /root/.cache/majesty-diffusion/imagenet_512x_jpg_embed224.npz https://models.nmb.ai/majesty/imagenet_512x_jpg_embed224.npz
-    - wget -O /root/.cache/majesty-diffusion/openimages_512x_png_embed224.npz https://models.nmb.ai/majesty/openimages_512x_png_embed224.npz
-    - wget -O /root/.cache/majesty-diffusion/sa_0_4_vit_b_16_linear.pth https://models.nmb.ai/majesty/sa_0_4_vit_b_16_linear.pth
-    - wget -O /root/.cache/majesty-diffusion/sa_0_4_vit_b_32_linear.pth https://models.nmb.ai/majesty/sa_0_4_vit_b_32_linear.pth
-    #- wget -O /root/.cache/majesty-diffusion/erlich.pt https://models.nmb.ai/majesty/erlich.pt
-    #- wget -O /root/.cache/majesty-diffusion/ongo.pt https://models.nmb.ai/majesty/ongo.pt
+    - mkdir -p /root/.cache/majesty-diffusion; wget --quiet --output-document=/root/.cache/majesty-diffusion/latent_diffusion_txt2img_f8_large.ckpt https://models.nmb.ai/majesty/latent_diffusion_txt2img_f8_large.ckpt
+    - wget --quiet --output-document=/root/.cache/majesty-diffusion/txt2img-f8-large-jack000-finetuned-fp16.ckpt https://models.nmb.ai/majesty/txt2img-f8-large-jack000-finetuned-fp16.ckpt
+    - wget --quiet --output-document=/root/.cache/majesty-diffusion/GFPGANv1.3.pth https://models.nmb.ai/majesty/GFPGANv1.3.pth
+    - wget --quiet --output-document=/root/.cache/majesty-diffusion/ava_vit_b_16_linear.pth https://models.nmb.ai/majesty/ava_vit_b_16_linear.pth
+    - wget --quiet --output-document=/root/.cache/majesty-diffusion/ava_vit_l_14_336_linear.pth https://models.nmb.ai/majesty/ava_vit_l_14_336_linear.pth
+    - wget --quiet --output-document=/root/.cache/majesty-diffusion/ava_vit_l_14_linear.pth https://models.nmb.ai/majesty/ava_vit_l_14_linear.pth
+    - wget --quiet --output-document=/root/.cache/majesty-diffusion/imagenet_512x_jpg_embed224.npz https://models.nmb.ai/majesty/imagenet_512x_jpg_embed224.npz
+    - wget --quiet --output-document=/root/.cache/majesty-diffusion/openimages_512x_png_embed224.npz https://models.nmb.ai/majesty/openimages_512x_png_embed224.npz
+    - wget --quiet --output-document=/root/.cache/majesty-diffusion/sa_0_4_vit_b_16_linear.pth https://models.nmb.ai/majesty/sa_0_4_vit_b_16_linear.pth
+    - wget --quiet --output-document=/root/.cache/majesty-diffusion/sa_0_4_vit_b_32_linear.pth https://models.nmb.ai/majesty/sa_0_4_vit_b_32_linear.pth
+    #- wget --quiet --output-document=/root/.cache/majesty-diffusion/erlich.pt https://models.nmb.ai/majesty/erlich.pt
+    #- wget --quiet --output-document=/root/.cache/majesty-diffusion/ongo.pt https://models.nmb.ai/majesty/ongo.pt
     - echo "Downloading CLIP models..."
-    - mkdir -p /root/.cache/clip; wget -O /root/.cache/clip/ViT-B-16.pt https://models.nmb.ai/clip/ViT-B-16.pt
-    - wget -O /root/.cache/clip/ViT-L-14.pt https://models.nmb.ai/clip/ViT-L-14.pt
-    - wget -O /root/.cache/clip/vit_b_32-laion2b_e16-af8dbd0c.pth https://models.nmb.ai/clip/vit_b_32-laion2b_e16-af8dbd0c.pth
-    #- wget -O /root/.cache/clip/ViT-B-32.pt https://models.nmb.ai/clip/ViT-B-32.pt
-    #- wget -O /root/.cache/clip/ViT-L-14-336px.pt https://models.nmb.ai/clip/ViT-L-14-336px.pt
-    #- wget -O /root/.cache/clip/vit_b_16_plus_240-laion400m_e32-699c4b84.pt https://models.nmb.ai/clip/vit_b_16_plus_240-laion400m_e32-699c4b84.pt
-    #- wget -O /root/.cache/clip/RN50x16.pt https://models.nmb.ai/clip/RN50x16.pt
-    #- wget -O /root/.cache/clip/RN50x4.pt https://models.nmb.ai/clip/RN50x4.pt
-    #- wget -O /root/.cache/clip/RN50x64.pt https://models.nmb.ai/clip/RN50x64.pt
+    - mkdir -p /root/.cache/clip; wget --quiet --output-document=/root/.cache/clip/ViT-B-16.pt https://models.nmb.ai/clip/ViT-B-16.pt
+    - wget --quiet --output-document=/root/.cache/clip/ViT-L-14.pt https://models.nmb.ai/clip/ViT-L-14.pt
+    - wget --quiet --output-document=/root/.cache/clip/vit_b_32-laion2b_e16-af8dbd0c.pth https://models.nmb.ai/clip/vit_b_32-laion2b_e16-af8dbd0c.pth
+    #- wget --quiet --output-document=/root/.cache/clip/ViT-B-32.pt https://models.nmb.ai/clip/ViT-B-32.pt
+    #- wget --quiet --output-document=/root/.cache/clip/ViT-L-14-336px.pt https://models.nmb.ai/clip/ViT-L-14-336px.pt
+    #- wget --quiet --output-document=/root/.cache/clip/vit_b_16_plus_240-laion400m_e32-699c4b84.pt https://models.nmb.ai/clip/vit_b_16_plus_240-laion400m_e32-699c4b84.pt
+    #- wget --quiet --output-document=/root/.cache/clip/RN50x16.pt https://models.nmb.ai/clip/RN50x16.pt
+    #- wget --quiet --output-document=/root/.cache/clip/RN50x4.pt https://models.nmb.ai/clip/RN50x4.pt
+    #- wget --quiet --output-document=/root/.cache/clip/RN50x64.pt https://models.nmb.ai/clip/RN50x64.pt
 
 image: "r8.im/nightmareai/majesty-diffusion-test"
 predict: "predict.py:Predictor"
