@@ -13,10 +13,9 @@ sizes = [128,192,256,320,384]
 class Predictor(BasePredictor):
     def setup(self):        
         # move preloaded clip models into cache
-        print('Loading CLIP models into cache...')
-        for file in os.listdir("/src/models/clip"):            
-            shutil.move(f'/src/models/clip/{file}', '/root/.cache/clip/')
-            print(f"{file}\n")
+        print('Ensuring models are loaded..')
+        models.download_models(model_path="/root/.cache/majesty-diffusion")
+        models.download_clip(majesty.clip_load_list)
         
     def predict(
         self,
@@ -65,7 +64,7 @@ class Predictor(BasePredictor):
                 "--starting_timestep",
                 starting_timestep,
                 "-m",
-                "/src/models",
+                "/root/.cache/majesty-diffusion",
                 "-o",
                 outdir,
                 "--model_source",
