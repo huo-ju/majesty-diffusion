@@ -7,7 +7,7 @@ import argparse
 
 
 def download_models(
-    model_path="models",
+    model_path="/root/.cache/majesty-diffusion",
     model_source="http://models.nmb.ai/majesty",
     ongo=False,
     erlich=False,
@@ -147,6 +147,8 @@ def main():
         "--ongo", help="Download ongo model", dest="ongo", action="store_true"
     )
 
+    parser.add_argument("--model-path", help="Path to download majesty models", default="/root/.cache/majesty-diffusion", type=str, dest="model_path")
+
     parser.add_argument(
         "--clip",
         metavar="M",
@@ -167,7 +169,7 @@ def main():
     elif args.clip_load_list:
         download_clip(args.clip_load_list)
     else:
-        download_models(ongo=args.ongo, erlich=args.erlich)
+        download_models(model_path=args.model_path, ongo=args.ongo, erlich=args.erlich)
 
 
 if __name__ == "__main__":
