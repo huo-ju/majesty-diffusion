@@ -1024,7 +1024,7 @@ def config_options():
     opt.ddim_eta = opt_ddim_eta
     opt.eta_end = opt_eta_end
     opt.temperature = opt_temperature
-    opt.n_iter = how_many_batches
+    opt.n_iter = 1
     opt.n_samples = n_samples
     opt.scale = latent_diffusion_guidance_scale
     opt.plms = opt_plms
@@ -1112,9 +1112,9 @@ def dynamic_thresholding(pred_x0, t):
     return pred_x0
 
 
-def do_run():
+def load_clip_globals(force=False):
     global has_purged
-    if has_purged:
+    if has_purged or force:
         global clip_model, clip_size, clip_tokenize, clip_normalize, clip_list
         (
             clip_model,
@@ -1124,6 +1124,9 @@ def do_run():
             clip_list,
         ) = full_clip_load(clip_load_list)
         has_purged = False
+
+def do_run():
+    load_clip_globals()        
     global opt, model, p, base_count, make_cutouts, progress, target_embeds, weights, zero_embed, init, scale_factor, cur_step, uc, c
     if generate_video:
         fps = 24
@@ -1274,7 +1277,7 @@ def do_run():
                 if opt.scale != 1.0:
                     uc = model.get_learned_conditioning(opt.n_samples * opt.uc).cuda()
 
-                for n in trange(opt.n_iter, desc="Sampling"):
+                for n in range(opt.n_iter):
                     torch.cuda.empty_cache()
                     gc.collect()
                     c = model.get_learned_conditioning(opt.n_samples * prompt).cuda()
