@@ -59,7 +59,7 @@ from mmc.registry import REGISTRY
 import mmc.loaders  # force trigger model registrations
 from mmc.mock.openai import MockOpenaiClip
 
-model_path = "models"
+model_path = "/root/.cache/majesty-diffusion"
 outputs_path = "results"
 device = None
 opt = DotMap()
