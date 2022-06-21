@@ -25,6 +25,7 @@ def main(argv):
         default=[
             "The portrait of a Majestic Princess, trending on artstation"
         ],
+        nargs='+',
         dest="clip_prompts",
     )
     parser.add_argument(
@@ -32,12 +33,14 @@ def main(argv):
         type=str,
         help="Latent prompts",
         default=["The portrait of a Majestic Princess, trending on artstation"],
+        nargs='+',
         dest="latent_prompts",
     )
     parser.add_argument(
         "--latent_negatives",
         type=str,
         help="Negative prompts for Latent Diffusion",
+        nargs='+',
         default=[""],
         dest="latent_negatives",
     )
@@ -45,6 +48,7 @@ def main(argv):
         "--image_prompts",
         type=str,
         help="Image prompts",
+        nargs='+',
         default=[],
         dest="image_prompts",
     )

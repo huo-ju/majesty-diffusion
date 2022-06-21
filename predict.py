@@ -53,7 +53,7 @@ class Predictor(BasePredictor):
                 "--clip_prompt",
                 clip_prompt,
                 "--latent_prompt",
-                latent_prompt,                
+                latent_prompt,
                 "--latent_diffusion_model",
                 model,
                 "--latent_scale",
