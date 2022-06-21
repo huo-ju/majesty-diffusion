@@ -8,11 +8,13 @@ import glob
 import models
 import majesty
 import os,shutil
+import typing
 
 sizes = [128,192,256,320,384]
 model_path = "/root/.cache/majesty-diffusion"
 class Predictor(BasePredictor):
     def setup(self):        
+        os.environ["TOKENIZERS_PARALELLISM"] = "true"
         # move preloaded clip models into cache
         print('Ensuring models are loaded..')
         models.download_models(model_path=model_path)
@@ -42,7 +44,7 @@ class Predictor(BasePredictor):
         starting_timestep: float = Input(description="Starting timestep", default=0.9),
         num_batches: int = Input(description="Number of batches", default=1, ge=1, le=10),
         custom_settings: Path = Input(description="Advanced settings file", default=None),
-    ) -> Path:
+    ) -> typing.List[Path]:
         """Run a single prediction on the model"""
 
         outdir = tempfile.mkdtemp('majesty')
@@ -98,9 +100,8 @@ class Predictor(BasePredictor):
 
         if p.returncode != 0:
             raise CalledProcessError(p.returncode, p.args)
-
-        images = glob.glob(outdir + "/*.png")
-        return Path(images[0])
+        
+        yield [Path(image) for image in glob.glob(outdir + "/*.png")]
 
         # processed_input = preprocess(image)
         # output = self.model(processed_image, scale)
