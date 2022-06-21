@@ -2,7 +2,6 @@
 # https://github.com/replicate/cog/blob/main/docs/python.md
 
 from cog import BasePredictor, Input, Path
-from subprocess import Popen, PIPE, CalledProcessError
 import tempfile
 import glob
 import models
@@ -12,6 +11,7 @@ from omegaconf import OmegaConf
 import os,shutil
 import typing
 import gc
+from tqdm.auto import tqdm, trange
 
 sizes = [128,192,256,320,384]
 model_path = "/root/.cache/majesty-diffusion"
