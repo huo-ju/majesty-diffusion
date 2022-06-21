@@ -2,3 +2,4 @@ outputs
 .github
 .gitignore
 .git
+models-disabled

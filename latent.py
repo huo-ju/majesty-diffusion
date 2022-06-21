@@ -37,8 +37,8 @@ def main(argv):
     parser.add_argument(
         "--latent_negatives",
         type=str,
-        help="Negative prompts",
-        default=["low quality image"],
+        help="Negative prompts for Latent Diffusion",
+        default=None,
         dest="latent_negatives",
     )
     parser.add_argument(
@@ -173,10 +173,10 @@ def main(argv):
     #        dest="init_noise",
     #    )
     parser.add_argument(
-        "--enable_aesthetic_embeddings",
+        "--disable_aesthetic_embeddings",
         help="Experimental aesthetic embeddings, work only with OpenAI ViT-B/32 and ViT-L/14",
         dest="experimental_aesthetic_embeddings",
-        action="store_true",
+        action="store_false",
     )
     parser.add_argument(
         "--aesthetic_embeddings_weight",
@@ -241,6 +241,7 @@ def main(argv):
     # @markdown #### OpenCLIP models
     ViT_B16_plus = False  # @param {type: "boolean"}
     ViT_B32_laion2b = True  # @param {type: "boolean"}
+    ViT_L14_laion = False #@param {type:"boolean"}
 
     # @markdown #### Multilangual CLIP models
     clip_farsi = False  # @param {type: "boolean"}
@@ -266,6 +267,8 @@ def main(argv):
         clip_load_list.append("[clip - mlfoundations - RN50x64--openai]")
     if RN50x16:
         clip_load_list.append("[clip - mlfoundations - RN50x16--openai]")
+    if ViT_L14_laion: 
+        clip_load_list.append("[clip - mlfoundations - ViT-L-14--laion400m_e32]")        
     if ViT_L14_336px:
         clip_load_list.append("[clip - mlfoundations - ViT-L-14-336--openai]")
     if ViT_B16_plus:

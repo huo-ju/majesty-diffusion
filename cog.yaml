@@ -37,8 +37,6 @@ build:
     - pip install realesrgan
     - git clone https://github.com/apolinario/Multi-Modal-Comparators /tmp/Multi-Modal-Comparators --branch gradient_checkpointing && cd /tmp/Multi-Modal-Comparators && poetry build && pip install dist/mmc*.whl
     - cd /tmp; python Multi-Modal-Comparators/src/mmc/napm_installs/__init__.py
-    - echo "Downloading CLIP models..."
-    - cd /tmp; wget https://raw.githubusercontent.com/NightmareAI/majesty-diffusion/cog/models.py; python models.py --clip-defaults
 
-image: "r8.im/nightmareai/majesty-diffusion-test"
+image: "r8.im/nightmareai/majesty-diffusion"
 predict: "predict.py:Predictor"
