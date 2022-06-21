@@ -38,8 +38,16 @@ build:
     - git clone https://github.com/apolinario/Multi-Modal-Comparators /tmp/Multi-Modal-Comparators --branch gradient_checkpointing && cd /tmp/Multi-Modal-Comparators && poetry build && pip install dist/mmc*.whl
     - cd /tmp; python Multi-Modal-Comparators/src/mmc/napm_installs/__init__.py
     - echo "Downloading majesty-diffusion models..."
-    - cd /tmp; wget https://raw.githubusercontent.com/NightmareAI/majesty-diffusion/c2a3f891373a0bebe78d728ed0ac54fecf4c03b6/models.py
-    - cd /tmp; python models.py --model-path /root/.cache/majesty-diffusion
+    - mkdir -p /root/.cache/majesty-diffusion; wget -o /root/.cache/majesty-diffusion/latent_diffusion_txt2img_f8_large.ckpt https://models.nmb.ai/majesty/latent_diffusion_txt2img_f8_large.ckpt
+    - wget -o /root/.cache/majesty-diffusion/txt2img-f8-large-jack000-finetuned-fp16.ckpt https://models.nmb.ai/majesty/txt2img-f8-large-jack000-finetuned-fp16.ckpt
+    - wget -o /root/.cache/majesty-diffusion/GFPGANv1.3.pth https://models.nmb.ai/majesty/GFPGANv1.3.pth
+    - wget -o /root/.cache/majesty-diffusion/ava_vit_b_16_linear.pth https://models.nmb.ai/majesty/ava_vit_b_16_linear.pth
+    - wget -o /root/.cache/majesty-diffusion/ava_vit_l_14_336_linear.pth https://models.nmb.ai/majesty/ava_vit_l_14_336_linear.pth
+    - wget -o /root/.cache/majesty-diffusion/ava_vit_l_14_linear.pth https://models.nmb.ai/majesty/ava_vit_l_14_linear.pth
+    - wget -o /root/.cache/majesty-diffusion/imagenet_512x_jpg_embed224.npz https://models.nmb.ai/majesty/imagenet_512x_jpg_embed224.npz
+    - wget -o /root/.cache/majesty-diffusion/openimages_512x_png_embed224.npz https://models.nmb.ai/majesty/openimages_512x_png_embed224.npz
+    - wget -o /root/.cache/majesty-diffusion/sa_0_4_vit_b_16_linear.pth https://models.nmb.ai/majesty/sa_0_4_vit_b_16_linear.pth
+    - wget -o /root/.cache/majesty-diffusion/sa_0_4_vit_b_32_linear.pth https://models.nmb.ai/majesty/sa_0_4_vit_b_32_linear.pth
     - echo "Downloading CLIP models..."
     - mkdir -p /root/.cache/clip; wget -o /root/.cache/clip/ViT-B-16.pt https://models.nmb.ai/clip/ViT-B-16.pt
     - wget -o /root/.cache/clip/ViT-L-14.pt https://models.nmb.ai/clip/ViT-L-14.pt
