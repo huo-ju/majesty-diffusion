@@ -41,9 +41,9 @@ build:
     - cd /tmp; wget https://raw.githubusercontent.com/NightmareAI/majesty-diffusion/c2a3f891373a0bebe78d728ed0ac54fecf4c03b6/models.py
     - cd /tmp; python models.py --model-path /root/.cache/majesty-diffusion
     - echo "Downloading CLIP models..."
-    - cd /tmp; python models.py --clip "[clip - mlfoundations - ViT-B-16--openai]"
-    - cd /tmp; python models.py --clip "[clip - mlfoundations - ViT-L-14--openai]"
-    - cd /tmp; python models.py --clip "[clip - mlfoundations - ViT-B-32--laion2b_e16]"
+    - mkdir -p /root/.cache/clip; wget -o /root/.cache/clip/ViT-B-16.pt https://models.nmb.ai/clip/ViT-B-16.pt
+    - wget -o /root/.cache/clip/ViT-L-14.pt https://models.nmb.ai/clip/ViT-L-14.pt
+    - wget -o /root/.cache/clip/vit_b_32-laion2b_e16-af8dbd0c.pth https://models.nmb.ai/clip/vit_b_32-laion2b_e16-af8dbd0c.pth
 
 image: "r8.im/nightmareai/majesty-diffusion-test"
 predict: "predict.py:Predictor"
