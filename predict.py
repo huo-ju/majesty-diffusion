@@ -16,11 +16,11 @@ class Predictor(BasePredictor):
         # move preloaded clip models into cache
         print('Ensuring models are loaded..')
         models.download_models(model_path=model_path)
-        models.download_clip(majesty.clip_load_list)
-        if not os.path.exists("GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth"):
+        #models.download_clip(majesty.clip_load_list)
+        if not os.path.exists("/src/GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth"):
             shutil.copyfile(
                 f"{model_path}/GFPGANv1.3.pth",
-                "GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth",
+                "/src/GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth",
         )
 
         
@@ -28,7 +28,7 @@ class Predictor(BasePredictor):
         self,
         clip_prompt: str = Input(description="Prompt for CLIP guidance", default="The portrait of a Majestic Princess, trending on artstation", max_length=230),
         latent_prompt: str = Input(description="Prompt for latent diffusion", default="The portrait of a Majestic Princess, trending on artstation", max_length=230),
-#        model: str = Input(description="Latent diffusion model", default='finetuned', choices=["original", "finetuned", "ongo", "erlich"]),
+        model: str = Input(description="Latent diffusion model", default='finetuned', choices=["original", "finetuned", "ongo", "erlich"]),
         latent_negatives: str = Input(description="Negative prompts for Latent Diffusion", default=None),
         height: int = Input(description="Output height (output will be scaled up 1.5x with default settings)", default=256, choices=sizes),
         width: int = Input(description="Output width (output will be scaled up 1.5x with default settings)", default=256, choices=sizes),
@@ -55,21 +55,21 @@ class Predictor(BasePredictor):
                 "--latent_prompt",
                 latent_prompt,                
                 "--latent_diffusion_model",
-                "finetuned",
+                model,
                 "--latent_scale",
-                latent_scale,
+                str(latent_scale),
                 "--clip_scale",
-                clip_scale,
+                str(clip_scale),
                 "--aesthetic_loss_scale",
-                aesthetic_loss_scale,
+                str(aesthetic_loss_scale),
                 "--height",
-                height,
+                str(height),
                 "--width",
-                width,
+                str(width),
                 "--batches",
-                num_batches,
+                str(num_batches),
                 "--starting_timestep",
-                starting_timestep,
+                str(starting_timestep),
                 "-m",
                 "/root/.cache/majesty-diffusion",
                 "-o",
@@ -78,11 +78,11 @@ class Predictor(BasePredictor):
                 "https://models.nmb.ai/majesty",
             ]
         if init_image:
-            command.append("--init_image", init_image)
-            command.append("--init_scale", init_scale)
-            command.append("--init_brightness", init_brightness)
+            command.append(["--init_image", init_image])
+            command.append(["--init_scale", init_scale])
+            command.append(["--init_brightness", init_brightness])
             if init_mask:
-                command.append("--init_mask", init_mask)
+                command.append(["--init_mask", init_mask])
 
         if latent_negatives:
             command.append(["--latent_negatives", latent_negatives])
