@@ -10,12 +10,19 @@ import majesty
 import os,shutil
 
 sizes = [128,192,256,320,384]
+model_path = "/root/.cache/majesty-diffusion"
 class Predictor(BasePredictor):
     def setup(self):        
         # move preloaded clip models into cache
         print('Ensuring models are loaded..')
-        models.download_models(model_path="/root/.cache/majesty-diffusion")
+        models.download_models(model_path=model_path)
         models.download_clip(majesty.clip_load_list)
+        if not os.path.exists("GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth"):
+            shutil.copyfile(
+                f"{model_path}/GFPGANv1.3.pth",
+                "GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth",
+        )
+
         
     def predict(
         self,

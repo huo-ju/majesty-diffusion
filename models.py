@@ -90,12 +90,6 @@ def download_models(
                 ["wget", "-nv", "-O", model_file, url, "--no-check-certificate"],
                 shell=False,
             )
-    if not os.path.exists("GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth"):
-        shutil.copyfile(
-            f"{model_path}/GFPGANv1.3.pth",
-            "GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth",
-        )
-
 
 def get_mmc_models(clip_load_list):
     mmc_models = []
