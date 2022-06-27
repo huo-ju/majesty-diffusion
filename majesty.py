@@ -1013,7 +1013,7 @@ def config_output_size():
 
 
 def config_options():
-    global aes_scale, opt, aug, clamp_index_variation, score_corrector
+    global aes_scale, opt, aug, clamp_index_variation, score_corrector, seed
     aes_scale = aesthetic_loss_scale
     opt.mag_mul = opt_mag_mul
     opt.ddim_eta = opt_ddim_eta
@@ -1031,6 +1031,13 @@ def config_options():
         clamp_index_variation = clamp_index
     score_corrector = DotMap()
     score_corrector.modify_score = modify_score
+    # Seed
+    if seed > 0:
+        torch.manual_seed(seed)
+    else:
+        seed = random.randint(0, 2**32)
+        torch.manual_seed(seed)
+        print(f"Using seed {seed}")
 
 
 def modify_score(e_t, e_t_uncond):
