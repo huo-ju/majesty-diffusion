@@ -1031,14 +1031,6 @@ def config_options():
         clamp_index_variation = clamp_index
     score_corrector = DotMap()
     score_corrector.modify_score = modify_score
-    # Seed
-    if seed > 0:
-        torch.manual_seed(seed)
-    else:
-        seed = random.randint(0, 2**32)
-        torch.manual_seed(seed)
-        print(f"Using seed {seed}")
-
 
 def modify_score(e_t, e_t_uncond):
     if score_modifier is False:
