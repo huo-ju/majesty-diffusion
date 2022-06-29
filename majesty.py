@@ -588,7 +588,7 @@ def cond_fn(x, t):
         # rx_in_grad = torch.zeros_like(x_in)
         for i in clip_list:
             make_cutouts[i] = MakeCutouts(
-                clip_size[i],
+                clip_size[i][0] if type(clip_size[i]) is tuple else clip_size[i],
                 Overview=cut_overview[t],
                 InnerCrop=cut_innercut[t],
                 IC_Size_Pow=cut_ic_pow,
@@ -1224,7 +1224,7 @@ def do_run():
             img = base64_to_image(init_image).convert("RGB")
         else:
             img = Image.open(fetch(init_image)).convert("RGB")
-        init = TF.to_tensor(init).to(device).unsqueeze(0)
+        init = TF.to_tensor(img).to(device).unsqueeze(0)
         if init_rotate:
             init = torch.rot90(init, 1, [3, 2])
         x0_original = torch.tensor(init)
@@ -1278,7 +1278,7 @@ def do_run():
                 if opt.scale != 1.0:
                     uc = model.get_learned_conditioning(opt.n_samples * opt.uc).cuda()
 
-                for n in trange(opt.n_iter, desc="Sampling"):
+                for n in range(opt.n_iter):
                     torch.cuda.empty_cache()
                     gc.collect()
                     c = model.get_learned_conditioning(opt.n_samples * prompt).cuda()
@@ -1321,7 +1321,9 @@ def do_run():
                                 score_corrector=score_corrector,
                                 corrector_kwargs=score_corrector_setting,
                                 x0_adjust_fn=dynamic_thresholding,
-                                clip_embed=target_embeds["ViT-L-14--openai"]
+                                clip_embed=target_embeds["ViT-L-14--openai"].mean(
+                                    0, keepdim=True
+                                )
                                 if "ViT-L-14--openai" in clip_list
                                 else None,
                             )
