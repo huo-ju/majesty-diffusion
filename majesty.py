@@ -308,10 +308,11 @@ def load_model_from_config(
     if latent_diffusion_model == "finetuned":
         sd = torch.load(
             f"{model_path}/txt2img-f8-large-jack000-finetuned-fp16.ckpt",
-            map_location="cuda",
+            map_location="cpu",
         )
         m, u = model.load_state_dict(sd, strict=False)
-        # model.model = model.model.half().eval().to(device)
+        #model.model = model.model.half().eval().to(device)
+        model.to(device)
 
     if latent_diffusion_model.startswith("ongo"):
         del sd
